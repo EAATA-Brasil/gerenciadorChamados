@@ -17,13 +17,14 @@ export class TicketsController {
         return this.ticketsService.findAll();
     }  
 
-    @Get('report')
-    getForReport(@Query('startDate') startDate: string, 
-                @Query('endDate') endDate: string) {
-        return this.ticketsService.getTicketsForReport(
-            new Date(startDate),
-            new Date(endDate)
-        );
+    @Get("report")
+    getReport(
+    @Query("startDate") startDate: string,
+    @Query("endDate") endDate: string
+    ) {
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        return this.ticketsService.getTicketsForReport(start, end);
     }
 
     @Get(':id')
@@ -40,4 +41,5 @@ export class TicketsController {
     remove(@Param('id') id: string) {
         return this.ticketsService.remove(+id);
     }
+    
 }

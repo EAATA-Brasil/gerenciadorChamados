@@ -127,7 +127,6 @@ export class ReportController {
   private addDepartmentPage(doc: PDFKit.PDFDocument, reportData: any, department: string) {
     const deptTickets = reportData.tickets.filter(t => t.department === department);
     const total = deptTickets.length;
-    console.log(deptTickets);
     
     const resolved = deptTickets.filter(t => t.status === 'closed').length;
     const inProgress = deptTickets.filter(t => t.status === 'in_progress').length;
@@ -272,18 +271,19 @@ export class ReportController {
     doc.fontSize(10)
        .fillColor('#333333')
        .text(`Legenda: `, x, y + chartHeight + 10)
-       .fillColor(resolvedColor).text('■ Concluídos ', { continued: true })
-       .fillColor(inProgressColor).text('■ Em Progresso ', { continued: true })
-       .fillColor(openColor).text('■ Abertos');
+       .fillColor(resolvedColor).text('Concluídos ', { continued: true })
+       .fillColor(inProgressColor).text(' Em Progresso ', { continued: true })
+       .fillColor(openColor).text(' Abertos');
     
     doc.moveDown(2);
   }
 
   private addTicketsTable(doc: PDFKit.PDFDocument, tickets: any[]) {
     const tableTop = doc.y + 20;
-    const col1 = 50;   // ID (largura: 60px)
-    const col2 = 110;  // Título (largura: 240px)
-    const col3 = 350;  // Status (largura: restante)
+    const col1 = 50;   // ID (largura: 50px)
+    const col2 = 100;  // Título (largura: 200px)
+    const col3 = 300;  // Status (largura: 100px)
+    const col4 = 400;  // Data (largura: 150px)
     
     const rowHeight = 20;
     const headerColor = '#3498db';
@@ -311,11 +311,20 @@ export class ReportController {
        });
 
     doc.fillColor(headerColor)
-       .rect(col3, tableTop, doc.page.width - col3 - 50, rowHeight)
+       .rect(col3, tableTop, col4 - col3, rowHeight)
        .fill()
        .fillColor('#ffffff')
        .text('STATUS', col3 + textPadding, tableTop + textPadding, {
-           width: doc.page.width - col3 - 50 - (2 * textPadding),
+           width: col4 - col3 - (2 * textPadding),
+           align: 'center'
+       });
+
+    doc.fillColor(headerColor)
+       .rect(col4, tableTop, doc.page.width - col4 - 50, rowHeight)
+       .fill()
+       .fillColor('#ffffff')
+       .text('CRIADO EM', col4 + textPadding, tableTop + textPadding, {
+           width: doc.page.width - col4 - 50 - (2 * textPadding),
            align: 'center'
        });
 
@@ -327,6 +336,10 @@ export class ReportController {
         doc.fillColor(rowColor)
            .rect(col1, y, doc.page.width - col1 - 50, rowHeight)
            .fill();
+
+        // Formata a data para exibição
+        const createdAt = ticket.createdAt ? 
+              new Date(ticket.createdAt).toLocaleDateString('pt-BR') : 'N/A';
 
         // Conteúdo das células
         doc.fillColor('#333333')
@@ -340,8 +353,14 @@ export class ReportController {
                width: col3 - col2 - (2 * textPadding),
                ellipsis: true
            })
-           .text(ticket.status, col3 + textPadding, y + textPadding, {
-               width: doc.page.width - col3 - 50 - (2 * textPadding),
+           .text(ticket.status === 'open' ? 'Aberto' : 
+                 ticket.status === 'in_progress' ? 'Em Progresso' : 'Fechado', 
+                 col3 + textPadding, y + textPadding, {
+               width: col4 - col3 - (2 * textPadding),
+               align: 'center'
+           })
+           .text(createdAt, col4 + textPadding, y + textPadding, {
+               width: doc.page.width - col4 - 50 - (2 * textPadding),
                align: 'center'
            });
 
@@ -362,7 +381,8 @@ export class ReportController {
     });
 
     doc.y = y + 15;
-}
+}  
+
 
   private getDepartmentColor(department: string): string {
     const colors: Record<string, string> = {

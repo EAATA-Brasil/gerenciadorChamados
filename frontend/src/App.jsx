@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Home from './pages/Home'
 import Relatorio from './pages/Relatorio'
 import CreateTicket from './pages/CreateTicket'
+import Settings from './pages/Settings'
 
 function App() {
   const [count, setCount] = useState(0)
@@ -16,6 +17,7 @@ function App() {
         <Route path='/' element={<Home/>}/>
         <Route path='/relatorio' element={<Relatorio/>}/>
         <Route path='/create' element={<CreateTicket/>}/>
+        <Route path='/settings' element={<Settings/>}/>
       </Routes>
     </BrowserRouter>
   )

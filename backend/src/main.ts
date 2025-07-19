@@ -4,6 +4,9 @@ import { ValidationPipe } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import * as express from 'express'
+import * as fs from "fs";
+
+const CONFIG_PATH = join(__dirname, "..", "config.json");
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -21,3 +24,12 @@ async function bootstrap() {
   console.log(`Aplicação rodando em: http://localhost:${process.env.PORT ?? 3000}`)
 }
 bootstrap();
+
+
+export function getDatabaseUrl(): string {
+  if (fs.existsSync(CONFIG_PATH)) {
+    const data = JSON.parse(fs.readFileSync(CONFIG_PATH, "utf-8"));
+    if (data.dbUrl) return data.dbUrl;
+  }
+  return "sqlite://./data.sqlite"; // padrão
+}

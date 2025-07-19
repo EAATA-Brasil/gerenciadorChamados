@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import "./styles.css"
 import { Legend, Pie, PieChart, Tooltip, Cell } from "recharts";
 import { Link } from "react-router-dom";
+import { FaCog } from "react-icons/fa"
 
 function Home() {
   const [tickets, setTickets] = useState([])
@@ -146,6 +147,11 @@ return (
           <Link to="/relatorio">
             <button className="btn btn-create">Relatório</button>
           </Link>
+          <div className="settings-icon">
+            <Link to="/settings">
+              <FaCog size={24} color="#fff" />
+            </Link>
+          </div>
         </span>
       </div>
       <div className="all-tickets">

@@ -78,3 +78,9 @@ frontend/.vite/
 backend/node_modules/
 backend/dist/
 backend/.eslintcache
+
+
+uploads/
+backend/config.json
+backend/database.sqlite
+backend/package.json

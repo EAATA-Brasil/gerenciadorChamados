@@ -1,4 +1,4 @@
-import { IsDateString, IsOptional, IsString } from 'class-validator';
+import { IsDate, IsDateString, IsOptional, IsString } from 'class-validator';
 
 export class CreateTicketDto {
   @IsString()
@@ -13,7 +13,7 @@ export class CreateTicketDto {
   @IsOptional()
   department: string;
 
-  @IsDateString()
+  @IsDate()
   @IsOptional()
-  dueDate?: string;
+  dueDate?: Date;
 }

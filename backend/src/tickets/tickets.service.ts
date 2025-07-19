@@ -1,65 +1,98 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { Injectable, NotFoundException, BadRequestException } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository, Between } from "typeorm";
 import { Ticket, TicketStatus } from "./ticket.entity";
 import { CreateTicketDto } from "./dto/create-ticket.dto";
 import { UpdateTicketDto } from "./dto/update-ticket.dto";
 
 @Injectable()
 export class TicketsService {
-    private tickets: Ticket[] = [];
-    private idCounter = 1;
+  constructor(
+    @InjectRepository(Ticket)
+    private readonly ticketRepository: Repository<Ticket>
+  ) {}
 
-    create(dto: CreateTicketDto): Ticket {
-        const ticket: Ticket = {
-            id: this.idCounter++,
-            title: dto.title,
-            description: dto.description,
-            department: dto.department,
-            status: TicketStatus.OPEN,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            dueDate: dto.dueDate ? new Date(dto.dueDate) : undefined
-        };
-        this.tickets.push(ticket);
-        return ticket;
+  async create(dto: CreateTicketDto): Promise<Ticket> {
+      // Correção: Criar a entidade corretamente
+      const ticket = new Ticket();
+      ticket.title = dto.title;
+      ticket.description = dto.description;
+      ticket.department = dto.department;
+      ticket.status = TicketStatus.OPEN;
+      ticket.dueDate = dto.dueDate ? new Date(dto.dueDate) : null;
+      ticket.closedAt = null;
+      ticket.createdAt = new Date();
+      ticket.updatedAt = new Date();
+      
+      return await this.ticketRepository.save(ticket);
+  }
+
+  async findAll(): Promise<Ticket[]> {
+    return await this.ticketRepository.find();
+  }
+
+  async findOne(id: number): Promise<Ticket> {
+    const ticket = await this.ticketRepository.findOne({ where: { id } });
+    if (!ticket) throw new NotFoundException('Ticket Not Found');
+    return ticket;
+  }
+
+  async update(id: number, dto: UpdateTicketDto): Promise<Ticket> {
+    const ticket = await this.findOne(id);
+
+    if (dto.title) ticket.title = dto.title;
+    if (dto.description) ticket.description = dto.description;
+    
+    if (dto.status) {
+      if (!Object.values(TicketStatus).includes(dto.status)) {
+        throw new BadRequestException('Status inválido');
+      }
+      ticket.status = dto.status;
+      if (dto.status === TicketStatus.CLOSED && !ticket.closedAt) {
+        ticket.closedAt = new Date();
+      }
     }
 
-    findAll(): Ticket[] {
-        return this.tickets;
-    }
+    ticket.updatedAt = new Date();
+    return await this.ticketRepository.save(ticket);
+  }
 
-    findOne(id: number): Ticket {
-        const ticket = this.tickets.find(t => t.id === id);
-        if (!ticket) throw new NotFoundException('Ticket Not Found');
-        return ticket;
+  async remove(id: number): Promise<void> {
+    const result = await this.ticketRepository.delete(id);
+    if (result.affected === 0) {
+      throw new NotFoundException("Ticket Not Found");
     }
+  }
 
-    update(id: number, dto: UpdateTicketDto): Ticket {
-        const ticket = this.findOne(id);
-        
-        if (dto.title) ticket.title = dto.title;
-        if (dto.description) ticket.description = dto.description;
-        if (dto.status) {
-            ticket.status = dto.status;
-            if (dto.status === TicketStatus.CLOSED) {
-                ticket.closedAt = new Date();
-            }
-        }
-        
-        ticket.updatedAt = new Date();
-        return ticket;
-    }
+  async getTicketsForReport(startDate: Date, endDate: Date): Promise<Ticket[]> {
+    const start = new Date(startDate);
+    start.setHours(0, 0, 0, 0);
 
-    remove(id: number) {
-        const index = this.tickets.findIndex((t) => t.id === id);
-        if (index === -1) throw new NotFoundException("Ticket Not Found");
-        this.tickets.splice(index, 1);
-    }
+    const end = new Date(endDate);
+    end.setHours(23, 59, 59, 999);
 
-    // Novo método para relatório
-    getTicketsForReport(startDate: Date, endDate: Date) {
-        return this.tickets.filter(ticket => {
-            const ticketDate = new Date(ticket.createdAt);
-            return ticketDate >= startDate && ticketDate <= endDate;
-        });
+    return await this.ticketRepository.find({
+      where: {
+        createdAt: Between(start, end)
+      }
+    });
+  }
+
+  // Métodos auxiliares para verificar status
+  async isOverdue(id: number): Promise<boolean> {
+    const ticket = await this.findOne(id);
+    if (!ticket.dueDate || ticket.status === TicketStatus.CLOSED) {
+      return false;
     }
+    return new Date() > new Date(ticket.dueDate);
+  }
+
+  async getResolutionTime(id: number): Promise<number | null> {
+    const ticket = await this.findOne(id);
+    if (!ticket.closedAt || !ticket.createdAt) {
+      return null;
+    }
+    const diff = ticket.closedAt.getTime() - ticket.createdAt.getTime();
+    return Math.floor(diff / (1000 * 60 * 60 * 24));
+  }
 }
