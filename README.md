@@ -80,7 +80,7 @@ Ele é voltado para **gerenciamento de chamados internos** com **notificações 
 
 ## ⚠️ Ajuste necessário para evitar erro com `fontkit`
 
-No arquivo `main.cjs`, altere:
+No arquivo `nodue_modules/fontkit/dist/main.cjs`, altere:
 
 ```js
 new TextDecoder('ascii');
