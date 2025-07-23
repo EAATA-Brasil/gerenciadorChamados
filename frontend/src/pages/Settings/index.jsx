@@ -1,34 +1,36 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
+import styles from "./Settings.module.css";
 import { Link } from "react-router-dom";
-import './styles.css';
 
 function Settings() {
   const [config, setConfig] = useState({
-    type: 'sqlite',
-    host: '',
-    port: '',
-    user: '',
-    password: '',
-    name: ''
+    type: "sqlite",
+    host: "",
+    port: "",
+    user: "",
+    password: "",
+    name: "",
   });
+
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const API_URL = "http://localhost:3000/config";
+  const toggleShowPassword = () => setShowPassword((prev) => !prev);
 
-  // Carregar configuração existente
   useEffect(() => {
     fetch(`${API_URL}/db`)
       .then((res) => res.json())
       .then((data) => {
         if (data.type) {
           setConfig({
-            type: data.type || 'sqlite',
-            host: data.host || '',
-            port: data.port || '',
-            user: data.user || '',
-            password: data.password || '',
-            name: data.name || ''
+            type: data.type || "sqlite",
+            host: data.host || "",
+            port: data.port || "",
+            user: data.user || "",
+            password: data.password || "",
+            name: data.name || "",
           });
         }
       })
@@ -48,7 +50,7 @@ function Settings() {
 
       if (res.ok) {
         setMessage(
-          config.type === 'sqlite' 
+          config.type === "sqlite"
             ? "✅ SQLite será usado como banco de dados padrão"
             : "✅ Configuração do banco de dados salva com sucesso!"
         );
@@ -68,31 +70,31 @@ function Settings() {
     setConfig({
       ...config,
       type: newType,
-      // Reset outros campos se voltar para SQLite
-      ...(newType === 'sqlite' && {
-        host: '',
-        port: '',
-        user: '',
-        password: '',
-        name: ''
-      })
+      ...(newType === "sqlite" && {
+        host: "",
+        port: "",
+        user: "",
+        password: "",
+        name: "",
+      }),
     });
   };
 
   return (
-    <div className="settings-container">
-      <div className="settings-header">
+    <div className={styles["settings-container"]}>
+      <div className={styles["settings-header"]}>
         <h1>⚙ Configurações do Banco de Dados</h1>
         <p>Configure seu banco de dados preferido</p>
       </div>
 
-      <div className="settings-form">
-        <div className="form-group">
-          <label className="settings-label">
+      <div className={styles["settings-form"]}>
+        <div className={styles["form-group"]}>
+          <label className={styles["settings-label"]} htmlFor="db-type">
             Tipo de Banco de Dados:
           </label>
           <select
-            className="settings-select"
+            id="db-type"
+            className={styles["settings-select"]}
             value={config.type}
             onChange={handleTypeChange}
           >
@@ -102,89 +104,124 @@ function Settings() {
           </select>
         </div>
 
-        {config.type !== 'sqlite' && (
+        {config.type !== "sqlite" && (
           <>
-            <div className="form-group">
-              <label className="settings-label">Host:</label>
+            <div className={styles["form-group"]}>
+              <label className={styles["settings-label"]} htmlFor="host">
+                Host:
+              </label>
               <input
-                className="settings-input"
+                id="host"
+                className={styles["settings-input"]}
                 type="text"
                 placeholder="ex: localhost"
                 value={config.host}
-                onChange={(e) => setConfig({...config, host: e.target.value})}
+                onChange={(e) => setConfig({ ...config, host: e.target.value })}
               />
             </div>
 
-            <div className="form-group">
-              <label className="settings-label">Porta:</label>
+            <div className={styles["form-group"]}>
+              <label className={styles["settings-label"]} htmlFor="port">
+                Porta:
+              </label>
               <input
-                className="settings-input"
+                id="port"
+                className={styles["settings-input"]}
                 type="text"
                 placeholder="ex: 5432 para PostgreSQL"
                 value={config.port}
-                onChange={(e) => setConfig({...config, port: e.target.value})}
+                onChange={(e) => setConfig({ ...config, port: e.target.value })}
               />
             </div>
 
-            <div className="form-group">
-              <label className="settings-label">Usuário:</label>
+            <div className={styles["form-group"]}>
+              <label className={styles["settings-label"]} htmlFor="user">
+                Usuário:
+              </label>
               <input
-                className="settings-input"
+                id="user"
+                className={styles["settings-input"]}
                 type="text"
                 placeholder="Nome de usuário"
                 value={config.user}
-                onChange={(e) => setConfig({...config, user: e.target.value})}
+                onChange={(e) => setConfig({ ...config, user: e.target.value })}
               />
             </div>
 
-            <div className="form-group">
-              <label className="settings-label">Senha:</label>
+            <div className={styles["form-group"]} style={{ position: "relative" }}>
+              <label className={styles["settings-label"]}>Senha:</label>
               <input
-                className="settings-input"
-                type="password"
+                className={styles["settings-input"]}
+                type={showPassword ? "text" : "password"}
                 placeholder="Senha"
                 value={config.password}
-                onChange={(e) => setConfig({...config, password: e.target.value})}
+                onChange={(e) =>
+                  setConfig({ ...config, password: e.target.value })
+                }
               />
+              {/* Ícone do olho */}
+              <button
+                type="button"
+                onClick={toggleShowPassword}
+                className={styles["password-toggle"]}
+                aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                tabIndex={-1}
+              >
+                {showPassword ? "🐵" : "🙈"}
+              </button>
             </div>
 
-            <div className="form-group">
-              <label className="settings-label">Nome do Banco:</label>
+            <div className={styles["form-group"]}>
+              <label className={styles["settings-label"]} htmlFor="dbname">
+                Nome do Banco:
+              </label>
               <input
-                className="settings-input"
+                id="dbname"
+                className={styles["settings-input"]}
                 type="text"
                 placeholder="Nome do banco de dados"
                 value={config.name}
-                onChange={(e) => setConfig({...config, name: e.target.value})}
+                onChange={(e) => setConfig({ ...config, name: e.target.value })}
               />
             </div>
           </>
         )}
 
         <button
+          className={`${styles.btn} ${styles["btn-save"]}`}
           onClick={handleSave}
-          className="btn btn-save"
           disabled={loading}
+          aria-busy={loading}
         >
           {loading ? "Salvando..." : "Salvar Configuração"}
         </button>
 
         {message && (
-          <div className={`settings-message ${
-            message.includes('✅') ? 'success' : 'error'
-          }`}>
+          <div
+            className={`${styles["settings-message"]} ${
+              message.includes("✅")
+                ? styles.success
+                : styles.error
+            }`}
+            role="alert"
+          >
             {message}
           </div>
         )}
 
-        <div className="settings-note">
-          <p><strong>Observação:</strong> O servidor precisa ser reiniciado após alterar a configuração.</p>
+        <div className={styles["settings-note"]}>
+          <p>
+            <strong>Observação:</strong> O servidor precisa ser reiniciado após
+            alterar a configuração.
+          </p>
         </div>
       </div>
 
-      <div className="settings-footer">
+      <div className={styles["settings-footer"]}>
         <Link to="/">
-          <button className="btn btn-back">⬅ Voltar</button>
+          <button className={`${styles.btn} ${styles["btn-back"]}`}>
+            ⬅ Voltar
+          </button>
         </Link>
       </div>
     </div>

@@ -1,0 +1,290 @@
+.container {
+  padding: 2rem;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.btnCreate {
+  background: var(--accent);
+  color: var(--bg-card);
+  padding: 10px 16px;
+  font-weight: bold;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.btnCreate:hover {
+  opacity: 0.9;
+}
+
+.reportControls {
+  background: var(--bg-card);
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+  border: 1px solid var(--border);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: end;
+}
+
+.controlGroup {
+  display: flex;
+  flex-direction: column;
+  min-width: 200px;
+}
+
+.controlGroup label {
+  color: var(--text);
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.controlGroup select,
+.controlGroup input {
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.controlGroup select:focus,
+.controlGroup input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.errorMessage {
+  background: #fee2e2;
+  color: #dc2626;
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  border: 1px solid #fecaca;
+}
+
+.reportPreview {
+  background: var(--bg-card);
+  border-radius: 8px;
+  padding: 2rem;
+  border: 1px solid var(--border);
+  overflow-x: auto;
+}
+
+.reportHeader {
+  margin-bottom: 2rem;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 1rem;
+}
+
+.reportHeader h2 {
+  color: var(--accent);
+  margin-bottom: 0.5rem;
+}
+
+.reportPeriod {
+  color: var(--text);
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.reportSummary {
+  color: var(--text);
+  opacity: 0.8;
+  line-height: 1.5;
+}
+
+.reportMetrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.metricCard {
+  background: var(--bg);
+  padding: 1.5rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  text-align: center;
+}
+
+.metricCard h3 {
+  color: var(--text);
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+  opacity: 0.8;
+}
+
+.metricValue {
+  font-size: 2rem;
+  font-weight: bold;
+  color: var(--accent);
+}
+
+.resolved {
+  color: var(--green);
+}
+
+.pending {
+  color: var(--amber);
+}
+
+.overdue {
+  color: var(--red);
+}
+
+.reportCharts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.chartContainer {
+  background: var(--bg);
+  padding: 1.5rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  text-align: center;
+}
+
+.chartContainer h3 {
+  color: var(--text);
+  margin-bottom: 1rem;
+}
+
+.reportActions {
+  text-align: center;
+  padding-top: 2rem;
+  border-top: 1px solid var(--border);
+}
+
+.btnSave {
+  background: var(--accent);
+  color: #fff;
+  padding: 10px 16px;
+  font-weight: bold;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.btnSave:hover {
+  opacity: 0.9;
+}
+
+.reportTickets {
+  margin-top: 2rem;
+}
+
+.reportTickets h3 {
+  color: var(--text);
+  margin-bottom: 1rem;
+}
+
+.ticketList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.ticketItem {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: 4px;
+  padding: 12px;
+  margin-bottom: 8px;
+  cursor: default;
+  transition: background 0.2s;
+}
+
+.ticketItem:hover {
+  background: #2a2a2a;
+}
+
+.ticketTitle {
+  font-size: 1.1rem;
+  color: var(--text);
+}
+
+.ticketMeta {
+  display: flex;
+  gap: 1rem;
+  margin-top: 4px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.ticketStatus {
+  font-weight: bold;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  color: #fff;
+}
+
+/* Status colors */
+.statusOpen {
+  background-color: var(--green);
+}
+
+.statusInProgress {
+  background-color: var(--amber);
+}
+
+.statusClosed {
+  background-color: var(--red);
+}
+
+.ticketDepartment {
+  background: var(--bg);
+  color: var(--text);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  border: 1px solid var(--border);
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .reportControls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .controlGroup {
+    min-width: auto;
+  }
+
+  .reportCharts {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .reportMetrics {
+    grid-template-columns: 1fr;
+  }
+}
+
+::-webkit-calendar-picker-indicator {
+    filter: invert(1) brightness(50%) sepia(100%) saturate(10000%) hue-rotate(180deg);
+}

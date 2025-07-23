@@ -9,6 +9,8 @@ export class TicketsController {
 
     @Post()
     create(@Body() dto: CreateTicketDto) {
+
+        console.log("Nova chamada", JSON.stringify(dto))
         return this.ticketsService.create(dto);
     }
 

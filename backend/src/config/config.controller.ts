@@ -47,7 +47,7 @@ export class ConfigController {
       DB_PASS=${config.password || ''}
       DB_NAME=${config.name || ''}
     `);
-    
+    console.log("Reiniciar backend")
     return { success: true };
   }
 }

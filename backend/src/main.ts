@@ -1,3 +1,11 @@
+import * as nodeCrypto from 'crypto';
+
+if (!global.crypto) {
+  (global as any).crypto = {
+    randomUUID: () => nodeCrypto.randomUUID()
+  };
+}
+
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
@@ -5,6 +13,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import * as express from 'express'
 import * as fs from "fs";
+
 
 const CONFIG_PATH = join(__dirname, "..", "config.json");
 
@@ -20,7 +29,7 @@ async function bootstrap() {
 
 
   app.useGlobalPipes(new ValidationPipe())
-  await app.listen(process.env.PORT ?? 3000);
+  await app.listen(process.env.PORT ?? 3000, '0.0.0.0');
   console.log(`Aplicação rodando em: http://localhost:${process.env.PORT ?? 3000}`)
 }
 bootstrap();

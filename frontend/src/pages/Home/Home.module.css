@@ -1,0 +1,280 @@
+.homeContainer {
+  padding: 2rem;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x:hidden;
+}
+
+/* Cabeçalho */
+.homeHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.btnCreate {
+  background: var(--accent);
+  color: var(--bg-card);
+  padding: 10px 16px;
+  font-weight: bold;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.btnCreate:hover {
+  opacity: 0.9;
+}
+
+.settingsIcon {
+  position: absolute;
+  top: 10px;
+  right: 20px;
+  cursor: pointer;
+  color: #555;
+}
+.settingsIcon:hover {
+  color: #000;
+}
+
+/* Filtros */
+.filters {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 1rem;
+}
+
+.filters select {
+  background: #2a2a2a;
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 8px;
+  border-radius: 6px;
+}
+
+/* Lista de tickets */
+.ticketList {
+  list-style: none;
+  padding: 0;
+}
+
+.ticketItem {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: 4px;
+  padding: 12px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.ticketItem:hover {
+  background: #2a2a2a;
+}
+
+.ticketTitle {
+  font-size: 1.1rem;
+  color: var(--text);
+}
+
+.ticketStatus {
+  font-weight: bold;
+  margin-top: 4px;
+}
+
+.status-open {
+  color: var(--green);
+}
+
+.status-in_progress {
+  color: var(--amber);
+}
+
+.status-closed {
+  color: var(--red);
+}
+
+.ticketDesc {
+  opacity: 0.8;
+  margin-top: 6px;
+  font-size: 0.9rem;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.ticketDesc img {
+  max-width: 25%;
+  height: auto;
+  display: block;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Paginação */
+.pagination {
+  margin-top: 1rem;
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+}
+
+.pagination button {
+  background: #2a2a2a;
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.pagination button:hover {
+  background: #3a3a3a;
+}
+
+.pagination .active {
+  background: var(--accent);
+  color: var(--bg-card);
+}
+
+.paginationDots {
+  color: var(--text);
+  padding: 6px 10px;
+  display: inline-flex;
+  align-items: center;
+  opacity: 0.6;
+}
+
+/* Seção do meio */
+.middleSection {
+  display: flex;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+/* Esquerda: recentes */
+.recentTickets {
+  flex: 2; /* ocupa 2/3 */
+}
+
+/* Direita: gráfico */
+.ticketsChart {
+  flex: 1; /* ocupa 1/3 */
+  background: var(--bg-card);
+  padding: 1rem;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.ticketsChart h2 {
+  margin-bottom: 1rem;
+  color: var(--accent);
+}
+
+/* Modal */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.modalContent {
+  background: var(--bg-card);
+  padding: 1.5rem;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
+}
+
+.modalContent h2 {
+  margin-top: 0;
+  color: var(--accent);
+}
+
+.modalContent p {
+  margin: 8px 0;
+}
+
+.modalContent label {
+  display: block;
+  margin-top: 12px;
+  margin-bottom: 4px;
+  color: var(--text);
+}
+
+.modalContent select {
+  width: 100%;
+  padding: 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  margin-bottom: 10px;
+}
+
+.modalContent img{
+  width: 100%;
+}
+
+/* Botões */
+.btnSave {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 4px;
+  font-weight: bold;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.btnSave:hover {
+  opacity: 0.9;
+}
+
+.btnCancel {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 4px;
+  font-weight: bold;
+  background: var(--red);
+  color: var(--bg-card);
+  margin-left: 8px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.btnCancel:hover {
+  opacity: 0.9;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .middleSection {
+    flex-direction: column;
+  }
+
+  .modalContent {
+    width: 95%;
+    max-width: none;
+    margin: 10px;
+  }
+
+  .ticketDesc img {
+    max-width: 100%;
+    margin: 4px auto;
+  }
+}

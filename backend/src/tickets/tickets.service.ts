@@ -24,6 +24,7 @@ export class TicketsService {
       ticket.createdAt = new Date();
       ticket.updatedAt = new Date();
       
+
       return await this.ticketRepository.save(ticket);
   }
 

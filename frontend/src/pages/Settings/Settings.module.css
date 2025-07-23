@@ -151,3 +151,22 @@
     padding: 20px;
   }
 }
+
+.password-toggle {
+  position: absolute;
+  top: 67%;
+  right: 10px;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #bbb;
+  font-size: 25px;
+  padding: 0;
+  line-height: 1;
+  user-select: none;
+}
+
+.password-toggle:hover {
+  color: #2196F3; /* Azul principal */
+}

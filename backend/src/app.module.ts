@@ -6,7 +6,7 @@ import { TicketsModule } from './tickets/tickets.module';
 import { UploadController } from './uploads/upload.controller';
 import { ReportController } from './report/report.controller';
 import { DatabaseModule } from './database/database.modules';
-import { ConfigController } from './config/config,.controller';
+import { ConfigController } from './config/config.controller';
 import { ConfigModule } from '@nestjs/config';
 
 @Module({
