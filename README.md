@@ -298,3 +298,6 @@ Sempre roda o backend localmente.
 | &#x2610; | Modificar departamentos através do configs                  |
 | &#x2610; | Separar abas no configs para configurações de front e back  |
 | &#x2610; | Ligar/desligar notificações para computadores específicos   |
+| &#x2610; | Adaptar para docker                                         |
+| &#x2610; | Escrever a documentação completa                            |
+| &#x2610; | Configurar testes                                           |
