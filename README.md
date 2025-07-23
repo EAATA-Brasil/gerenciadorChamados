@@ -48,8 +48,11 @@ Ele é voltado para **gerenciamento de chamados internos** com **notificações 
 ## 🏗️ Estrutura do Projeto
 
 /electron → Código principal do Electron
+
 /frontend → React + Vite
+
 /backend → NestJS
+
 /assets → Ícones, imagens e splash screen
 
 ---
