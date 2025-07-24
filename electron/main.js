@@ -40,13 +40,24 @@ function connectWebSocket(backendUrl) {
     socket = null;
   }
 
-  const wsUrl = backendUrl.replace(/^http/, 'ws'); // troca http por ws
+  const wsUrl = backendUrl.endsWith('/') ? backendUrl.slice(0, -1) : backendUrl;
   console.log(`🔌 Conectando ao WebSocket: ${wsUrl}`);
 
-  socket = io(wsUrl, { transports: ['websocket'] });
+  socket = io(wsUrl, {
+    transports: ['websocket'], // só WebSocket
+    reconnectionAttempts: 3,
+    timeout: 5000,
+    path:'/socket.io/',
+    url: wsUrl
+  });
 
   socket.on('connect', () => {
     console.log('✅ WebSocket conectado');
+  });
+
+  socket.on('connect_error', (err) => {
+    console.error('❌ connect_error:', err.message);
+    console.error('Detalhes:', err);
   });
 
   socket.on('disconnect', () => {
@@ -63,6 +74,7 @@ function connectWebSocket(backendUrl) {
     }).show();
   });
 }
+
 
 // ✅ Handlers IPC
 ipcMain.handle('get-backend-url', () => {
@@ -129,6 +141,7 @@ function startBackend() {
         splashWindow = null;
       }
       createWindow();
+      connectWebSocket(getBackendUrl());
     }
 
     console.log(`[BACKEND]: ${message}`);
@@ -236,7 +249,7 @@ app.whenReady().then(() => {
   startBackend();
 
   // ✅ Conecta WebSocket na inicialização com a URL salva
-  connectWebSocket(getBackendUrl());
+  
 });
 
 app.on('window-all-closed', () => { /* Mantém rodando no tray */ });
