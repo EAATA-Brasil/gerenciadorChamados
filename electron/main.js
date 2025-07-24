@@ -40,40 +40,52 @@ function connectWebSocket(backendUrl) {
     socket = null;
   }
 
-  const wsUrl = backendUrl.endsWith('/') ? backendUrl.slice(0, -1) : backendUrl;
-  console.log(`🔌 Conectando ao WebSocket: ${wsUrl}`);
+  // Remove a última barra se existir
+  const normalizedUrl = backendUrl.endsWith('/')
+    ? backendUrl.slice(0, -1)
+    : backendUrl;
+
+  // Se tiver mais de 3 partes, significa que tem prefixo (ex: /helpdesk)
+  const urlParts = normalizedUrl.split('/');
+  const hasPrefix = urlParts.length > 3;
+
+  // Se tiver prefixo, pegamos só o último segmento
+  const prefix = hasPrefix ? `/${urlParts.at(-1)}` : '';
+
+  const wsUrl = `${urlParts[0]}//${urlParts[2]}`; // sempre usamos a mesma base
+  const wsPath = `${prefix}/socket.io/` || '/socket.io/';
+
+  console.log(`🔌 Conectando ao WebSocket: ${wsUrl} (path: ${wsPath})`);
 
   socket = io(wsUrl, {
-    transports: ['websocket'], // só WebSocket
+    transports: ['websocket'],
+    path: wsPath,
     reconnectionAttempts: 3,
     timeout: 5000,
-    path:'/socket.io/',
-    url: wsUrl
   });
 
-  socket.on('connect', () => {
-    console.log('✅ WebSocket conectado');
-  });
+  socket.on('connect', () => console.log('✅ WebSocket conectado'));
 
   socket.on('connect_error', (err) => {
     console.error('❌ connect_error:', err.message);
-    console.error('Detalhes:', err);
   });
 
-  socket.on('disconnect', () => {
-    console.log('⚠️ WebSocket desconectado');
-  });
+  socket.on('disconnect', () => console.log('⚠️ WebSocket desconectado'));
 
+  
   socket.on('nova_chamada', (call) => {
     console.log('📢 Nova chamada recebida via WS:', call);
-    new Notification({
-      title: `Nova chamada - ${call.department || 'Helpdesk'}`,
-      body: call.title || 'Nova solicitação!',
-      silent: false,
-      icon: path.join(__dirname, 'assets', 'icon.png'),
-    }).show();
+    if (areNotificationsEnabled()) {
+      new Notification({
+        title: `Nova chamada - ${call.department || 'Helpdesk'}`,
+        body: call.title || 'Nova solicitação!',
+        silent: false,
+        icon: path.join(__dirname, 'assets', 'icon.png'),
+      }).show();
+    }
   });
 }
+
 
 
 // ✅ Handlers IPC
@@ -89,6 +101,19 @@ ipcMain.on('update-backend-url', (event, newUrl) => {
   console.log(`✅ Backend URL atualizada para: ${newUrl}`);
   connectWebSocket(newUrl); // reconecta WebSocket na nova URL
 });
+
+ipcMain.handle('get-notification-preference', () => {
+  const config = readConfig();
+  return config.notificationsEnabled !== false; // default TRUE
+});
+
+ipcMain.on('set-notification-preference', (event, enabled) => {
+  const config = readConfig();
+  config.notificationsEnabled = enabled;
+  saveConfig(config);
+  console.log(`🔔 Notificações ${enabled ? 'ativadas' : 'desativadas'} para este usuário`);
+});
+
 
 // ✅ Inicia backend NestJS
 function startBackend() {
@@ -221,6 +246,12 @@ function createWindow() {
 
   mainWindow.focus();
 }
+
+function areNotificationsEnabled() {
+  const config = readConfig();
+  return config.notificationsEnabled !== false; // padrão TRUE
+}
+
 
 // ✅ Tray + inicialização
 app.setName('EAATA Help Desk');

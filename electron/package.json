@@ -35,7 +35,9 @@
       "splash.html",
       "builds/**/*",
       "assets/**/*",
-      "package.json"
+      "package.json",
+      "preload.js",
+      "utils/*"
     ],
     "asarUnpack": [
       "builds/backend/**"

@@ -7,6 +7,21 @@ function Settings() {
   const { backendUrl, setBackendUrl } = useBackend(); // ✅ Pega e atualiza a URL global
   const [activeTab, setActiveTab] = useState("backend");
 
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+
+
+  useEffect(() => {
+  window.electronAPI.getNotificationPreference().then((enabled) => {
+    setNotificationsEnabled(enabled);
+    });
+  }, []);
+
+  const handleToggleNotifications = (checked) => {
+    setNotificationsEnabled(checked);
+    window.electronAPI.setNotificationPreference(checked);
+  };
+
+
   const [config, setConfig] = useState({
     type: "sqlite",
     host: "",
@@ -169,7 +184,15 @@ function Settings() {
               onChange={(e) => setBackendUrl(e.target.value)} // ✅ salva globalmente
             />
           </div>
-
+          <div className={styles["form-group"]}>
+            <label className={styles["settings-label"]}>Notificações:</label>
+            <input
+              type="checkbox"
+              checked={notificationsEnabled}
+              onChange={(e) => handleToggleNotifications(e.target.checked)}
+            />
+            <span>{notificationsEnabled ? "Ativadas ✅" : "Desativadas ❌"}</span>
+          </div>
           <button
             className={`${styles.btn} ${styles["btn-test-connection"]}`}
             onClick={handleTestConnection}
@@ -189,6 +212,7 @@ function Settings() {
             </div>
           )}
         </div>
+        
       )}
 
       {/* Aba Banco de Dados */}
