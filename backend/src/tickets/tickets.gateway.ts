@@ -7,7 +7,7 @@ import {
 import { Server } from 'socket.io';
 
 @WebSocketGateway({
-  cors: {
+  crossOriginIsolated: {
     origin: '*', // permite qualquer origem (ajuste em produção)
   },
 })
