@@ -13,6 +13,7 @@ import {
   CartesianGrid,
 } from "recharts";
 import { Link } from "react-router-dom";
+import { useBackend } from "../../context/BackendContext";
 
 function Relatorio() {
   const [reportType, setReportType] = useState("weekly");
@@ -21,6 +22,9 @@ function Relatorio() {
   const [reportData, setReportData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const { backendUrl } = useBackend();
+  
+  const API_URL = backendUrl+'tickets';
 
   const COLORS = ["#36b37e", "#ffad00", "#de350b"];
 
@@ -65,7 +69,7 @@ function Relatorio() {
 
     try {
       const ticketsResponse = await fetch(
-        `http://localhost:3000/tickets/report?startDate=${startDate}&endDate=${endDate}`
+        `${API_URL}/report?startDate=${startDate}&endDate=${endDate}`
       );
       const tickets = await ticketsResponse.json();
 
@@ -155,7 +159,7 @@ function Relatorio() {
 
     try {
       setLoading(true);
-      const response = await fetch("http://localhost:3000/report/generate-pdf", {
+      const response = await fetch(`${backendUrl}report/generate-pdf`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

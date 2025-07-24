@@ -170,3 +170,50 @@
 .password-toggle:hover {
   color: #2196F3; /* Azul principal */
 }
+
+/* Abas */
+.tab-header {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+  gap: 10px;
+}
+
+.tab {
+  padding: 10px 20px;
+  background: #2d2d2d;
+  border: 1px solid #3d3d3d;
+  border-radius: 6px;
+  color: #ccc;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.tab:hover {
+  background: #3d3d3d;
+}
+
+.tab.active {
+  background: #2196f3;
+  color: white;
+  border-color: #2196f3;
+}
+
+/* Botão testar conexão */
+.btn-test-connection {
+  background-color: #4caf50; /* Verde */
+  color: white;
+  margin-bottom: 15px;
+}
+
+.btn-test-connection:hover {
+  background-color: #388e3c; /* Verde escuro */
+  transform: translateY(-1px);
+}
+
+.btn-test-connection:disabled {
+  background-color: #2e7d32;
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}

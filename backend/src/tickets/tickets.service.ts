@@ -4,12 +4,14 @@ import { Repository, Between } from "typeorm";
 import { Ticket, TicketStatus } from "./ticket.entity";
 import { CreateTicketDto } from "./dto/create-ticket.dto";
 import { UpdateTicketDto } from "./dto/update-ticket.dto";
+import { TicketsGateway } from "./tickets.gateway";
 
 @Injectable()
 export class TicketsService {
   constructor(
     @InjectRepository(Ticket)
-    private readonly ticketRepository: Repository<Ticket>
+    private readonly ticketRepository: Repository<Ticket>,
+    private readonly gateway: TicketsGateway
   ) {}
 
   async create(dto: CreateTicketDto): Promise<Ticket> {
@@ -24,7 +26,7 @@ export class TicketsService {
       ticket.createdAt = new Date();
       ticket.updatedAt = new Date();
       
-
+      this.gateway.notifyNewTicket(ticket)
       return await this.ticketRepository.save(ticket);
   }
 

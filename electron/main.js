@@ -1,23 +1,92 @@
-const { app, BrowserWindow, Tray, Menu, Notification } = require('electron');
+const { app, BrowserWindow, Tray, Menu, Notification, ipcMain } = require('electron');
 const path = require('path');
 const { spawn } = require('child_process');
+const fs = require('fs');
+const io = require('socket.io-client');
 
 let mainWindow;
 let splashWindow;
-let backendProcess;
 let tray;
+let backendProcess;
 let backendScriptPath;
+let socket = null;
 
+// ✅ Caminho do config.json
+const CONFIG_PATH = path.join(app.getPath('userData'), 'config.json');
+
+// 🔧 Utilidades para config
+function readConfig() {
+  if (!fs.existsSync(CONFIG_PATH)) return {};
+  try {
+    return JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8'));
+  } catch {
+    return {};
+  }
+}
+function saveConfig(data) {
+  fs.writeFileSync(CONFIG_PATH, JSON.stringify(data, null, 2), 'utf-8');
+}
+
+// ✅ Pega URL do backend (default se não existir)
+function getBackendUrl() {
+  const config = readConfig();
+  return config.backendUrl || 'http://localhost:3000';
+}
+
+// ✅ Conecta WebSocket e escuta eventos
+function connectWebSocket(backendUrl) {
+  if (socket) {
+    socket.disconnect();
+    socket = null;
+  }
+
+  const wsUrl = backendUrl.replace(/^http/, 'ws'); // troca http por ws
+  console.log(`🔌 Conectando ao WebSocket: ${wsUrl}`);
+
+  socket = io(wsUrl, { transports: ['websocket'] });
+
+  socket.on('connect', () => {
+    console.log('✅ WebSocket conectado');
+  });
+
+  socket.on('disconnect', () => {
+    console.log('⚠️ WebSocket desconectado');
+  });
+
+  socket.on('nova_chamada', (call) => {
+    console.log('📢 Nova chamada recebida via WS:', call);
+    new Notification({
+      title: `Nova chamada - ${call.department || 'Helpdesk'}`,
+      body: call.title || 'Nova solicitação!',
+      silent: false,
+      icon: path.join(__dirname, 'assets', 'icon.png'),
+    }).show();
+  });
+}
+
+// ✅ Handlers IPC
+ipcMain.handle('get-backend-url', () => {
+  return getBackendUrl();
+});
+
+ipcMain.on('update-backend-url', (event, newUrl) => {
+  const config = readConfig();
+  config.backendUrl = newUrl;
+  saveConfig(config);
+
+  console.log(`✅ Backend URL atualizada para: ${newUrl}`);
+  connectWebSocket(newUrl); // reconecta WebSocket na nova URL
+});
+
+// ✅ Inicia backend NestJS
 function startBackend() {
   if (app.isPackaged) {
-    // Produção: backend.exe empacotado
     backendScriptPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'builds', 'backend', 'backend.exe');
     backendProcess = spawn(backendScriptPath, [], {
       cwd: path.dirname(backendScriptPath),
       stdio: ['pipe', 'pipe', 'pipe'],
     });
   } else {
-    // Desenvolvimento: roda o main.js do NestJS
     backendScriptPath = path.join(__dirname, '..', 'backend', 'dist', 'main.js');
     backendProcess = spawn('node', [backendScriptPath], {
       cwd: path.dirname(backendScriptPath),
@@ -25,7 +94,6 @@ function startBackend() {
     });
   }
 
-  // 🔔 Detecta novas chamadas
   backendProcess.stdout.on('data', (data) => {
     const message = data.toString();
 
@@ -33,30 +101,27 @@ function startBackend() {
       const jsonPart = message.replace('Nova chamada ', '').trim();
       try {
         const call = JSON.parse(jsonPart);
-
         new Notification({
           title: `Nova chamada - ${call.department}`,
           body: call.title,
           silent: false,
           icon: path.join(__dirname, 'assets', 'icon.png'),
         }).show();
-
       } catch (err) {
-        console.error('Erro ao fazer parse do JSON da nova chamada:', err);
+        console.error('Erro ao parsear nova chamada:', err);
       }
     }
 
-    if(message.includes('Reiniciar backend')){
+    if (message.includes('Reiniciar backend')) {
       new Notification({
-        title:'Reiniciando backend!',
-        body:'Nova configuração de banco de dados',
+        title: 'Reiniciando backend!',
+        body: 'Nova configuração de banco de dados',
         silent: false,
         icon: path.join(__dirname, 'assets', 'icon.png'),
-      }).show()
-      restartBackend()
+      }).show();
+      restartBackend();
     }
 
-    // ✅ Quando backend fica pronto
     if (message.includes('Aplicação rodando em')) {
       console.log('✅ Backend pronto, fechando splash e abrindo app');
       if (splashWindow) {
@@ -84,9 +149,7 @@ function startBackend() {
 }
 
 function restartBackend() {
-  if (backendProcess) {
-    backendProcess.kill();
-  }
+  if (backendProcess) backendProcess.kill();
   startBackend();
 
   new Notification({
@@ -125,6 +188,7 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
+      preload: path.join(__dirname, 'preload.js'), // para expor electronAPI
     },
   });
 
@@ -145,7 +209,7 @@ function createWindow() {
   mainWindow.focus();
 }
 
-
+// ✅ Tray + inicialização
 app.setName('EAATA Help Desk');
 app.setAppUserModelId('com.eaata.helpdesk');
 
@@ -153,34 +217,29 @@ app.whenReady().then(() => {
   tray = new Tray(path.join(__dirname, 'assets', 'icon.png'));
   tray.setToolTip('EAATA Help Desk');
 
-  // ✅ Clique ESQUERDO → ABRE a aplicação
   tray.on('click', () => {
-    if (!mainWindow) {
-      createWindow();
-    } else {
-      mainWindow.show();
-    }
+    if (!mainWindow) createWindow();
+    else mainWindow.show();
   });
 
-  // ✅ Clique DIREITO → Mostra menu com opções
   tray.on('right-click', () => {
     const rightMenu = Menu.buildFromTemplate([
       { label: 'Abrir', click: () => { if (!mainWindow) createWindow(); else mainWindow.show(); } },
       { label: 'Reiniciar Backend', click: () => restartBackend() },
-      { label: 'Reiniciar Aplicativo', click: () => {  app.relaunch(); } },
+      { label: 'Reiniciar Aplicativo', click: () => { app.relaunch(); } },
       { label: 'Fechar Aplicação', click: () => { app.isQuiting = true; app.quit(); } }
     ]);
     tray.popUpContextMenu(rightMenu);
   });
 
-
   createSplash();
   startBackend();
+
+  // ✅ Conecta WebSocket na inicialização com a URL salva
+  connectWebSocket(getBackendUrl());
 });
 
-app.on('window-all-closed', () => {
-  // Não fecha, mantém rodando no tray
-});
+app.on('window-all-closed', () => { /* Mantém rodando no tray */ });
 
 app.on('before-quit', () => {
   app.isQuiting = true;

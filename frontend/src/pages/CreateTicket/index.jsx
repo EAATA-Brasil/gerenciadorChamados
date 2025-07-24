@@ -6,6 +6,7 @@ import Image from "@tiptap/extension-image";
 import LinkExtension from "@tiptap/extension-link";
 
 import styles from "./CreateTicket.module.css";
+import { useBackend } from "../../context/BackendContext";
 
 function CreateTicket() {
   const [department, setDepartment] = useState("");
@@ -15,9 +16,11 @@ function CreateTicket() {
   const [message, setMessage] = useState("");
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [serverImageUrls, setServerImageUrls] = useState([]);
+  const { backendUrl } = useBackend();
 
-  const API_URL = "http://localhost:3000/tickets";
-
+  const API_URL = backendUrl+'tickets';
+  console.log(backendUrl);
+  
   const fileInputRef = useRef(null);
 
   const handleLocalImage = (editor, file) => {

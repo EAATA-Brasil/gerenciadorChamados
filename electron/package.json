@@ -4,27 +4,19 @@
   "main": "main.js",
   "scripts": {
     "start": "npm run build-dev:backend && electron .",
-
-    "install:all":"npm run install:electron && concurrently \"npm run install:backend\" \"npm run install:frontend\" ",
+    "install:all": "npm run install:electron && concurrently \"npm run install:backend\" \"npm run install:frontend\" ",
     "install:backend": "cd ../backend && npm i",
     "install:frontend": "cd ../frontend && npm i",
     "install:electron": "npm i",
-
-
-
     "dev": "concurrently \"npm run frontend\" \"electron .\"",
-    
     "package": "npm run build:all && mkdir builds & npm run copy:all && electron-builder",
-    
     "build:all": "npm run build:backend && npm run build:frontend",
     "build:backend": "cd ../backend && npm run pkg",
     "build-dev:backend": "cd ../backend && npm run build",
     "build:frontend": "cd ../frontend && npm run build",
-    
     "copy:all": "npm run copy:backend && npm run copy:frontend",
     "copy:backend": "cd builds && rmdir /s /q backend & mkdir backend & xcopy ..\\..\\backend\\backend.exe backend /Y",
     "copy:frontend": "cd builds && rmdir /s /q frontend & mkdir frontend & xcopy ..\\..\\frontend\\dist frontend /E /I /Y",
-
     "frontend": "cd ../frontend && npm run dev"
   },
   "devDependencies": {
@@ -79,5 +71,8 @@
       "createStartMenuShortcut": true,
       "runAfterFinish": true
     }
+  },
+  "dependencies": {
+    "socket.io-client": "^4.8.1"
   }
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import styles from "./Home.module.css"; // ✅ usando CSS module
 import {
   Legend,
@@ -10,20 +10,24 @@ import {
 } from "recharts";
 import { Link } from "react-router-dom";
 import { FaCog, FaTrash } from "react-icons/fa";
+import { useBackend } from "../../context/BackendContext";
 
 function Home() {
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
-
+  const { backendUrl } = useBackend();
+  
+  
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [newStatus, setNewStatus] = useState("");
-
+  
   const [currentPage, setCurrentPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState("all");
   const [departmentFilter, setDepartmentFilter] = useState("all");
   const [sortOrder, setSortOrder] = useState("desc");
-
-  const API_URL = "http://localhost:3000/tickets";
+  
+  const API_URL = backendUrl+'tickets';
+  console.log(API_URL, tickets);
 
   const total = tickets.length;
   const openCount = tickets.filter((t) => t.status === "open").length;
@@ -76,6 +80,7 @@ function Home() {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus }),
+        
       });
       setTickets((prev) =>
         prev.map((t) =>

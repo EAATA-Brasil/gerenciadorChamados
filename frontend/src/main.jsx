@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client'
 import App from './App'
 import './index.css'
 import { BrowserRouter, HashRouter } from 'react-router-dom'
+import { BackendProvider } from './context/BackendContext'
 
 // Detecta se está rodando pelo protocolo file:// (produção Electron)
 const isElectronProd = window.location.protocol === 'file:'
@@ -11,9 +12,11 @@ const isElectronProd = window.location.protocol === 'file:'
 const Router = isElectronProd ? HashRouter : BrowserRouter
 
 ReactDOM.createRoot(document.getElementById('root')).render(
-  <React.StrictMode>
-    <Router>
-      <App />
-    </Router>
-  </React.StrictMode>
+  <BackendProvider>
+    <React.StrictMode>
+      <Router>
+        <App />
+      </Router>
+    </React.StrictMode>
+  </BackendProvider>
 )
