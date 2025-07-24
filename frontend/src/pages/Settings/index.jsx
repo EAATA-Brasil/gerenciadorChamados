@@ -11,14 +11,18 @@ function Settings() {
 
 
   useEffect(() => {
-  window.electronAPI.getNotificationPreference().then((enabled) => {
-    setNotificationsEnabled(enabled);
-    });
+    if(window.electronAPI?.getNotificationPreference()){
+      window.electronAPI.getNotificationPreference().then((enabled) => {
+        setNotificationsEnabled(enabled);
+        });
+    }
   }, []);
 
   const handleToggleNotifications = (checked) => {
     setNotificationsEnabled(checked);
-    window.electronAPI.setNotificationPreference(checked);
+    if(window.electronAPI?.setNotificationPreference()){
+      window.electronAPI.setNotificationPreference(checked);
+    }
   };
 
 
