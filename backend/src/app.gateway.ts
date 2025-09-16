@@ -26,3 +26,4 @@ export class AppGateway implements OnGatewayConnection, OnGatewayDisconnect, OnG
       console.log("Servidor WS Iniciado");
   }
 }
+//http://82.25.71.76/helpdesk/

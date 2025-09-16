@@ -9,12 +9,14 @@ import { DatabaseModule } from './database/database.modules';
 import { ConfigController } from './config/config.controller';
 import { ConfigModule } from '@nestjs/config';
 import { AppGateway } from './app.gateway';
+import configuration from './config/configuration';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
+      load: [configuration]
     }),
     DatabaseModule.forRoot(),
     TicketsModule,

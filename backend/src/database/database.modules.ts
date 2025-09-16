@@ -25,30 +25,33 @@ export class DatabaseModule {
             let dbConfig: any = { type: 'sqlite' };
             if (fs.existsSync(CONFIG_PATH)) {
               const fileConfig = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8'));
-              if (fileConfig.type && fileConfig.type !== 'sqlite') {
-                dbConfig = {
-                  type: fileConfig.type,
-                  host: fileConfig.host,
-                  port: fileConfig.port,
-                  username: fileConfig.user,
-                  password: fileConfig.password,
-                  database: fileConfig.name,
-                  synchronize: true,
-                  autoLoadEntities: true
-                };
-                this.logger.log(`✅ Usando banco ${fileConfig.type} configurado via frontend`);
+                if (fileConfig.type) {
+                // Mapeia 'sqlite' para 'better-sqlite3' se for o caso
+                  const dbType = fileConfig.type === 'sqlite' ? 'better-sqlite3' : fileConfig.type;
+                  dbConfig = {
+                    type: dbType,
+                    host: fileConfig.host,
+                    port: fileConfig.port,
+                    username: fileConfig.user,
+                    password: fileConfig.password,
+                    database: fileConfig.name,
+                    synchronize: true,
+                    autoLoadEntities: true
+                  };
+                this.logger.log(`✅ Usando banco ${dbType} configurado via frontend`);
                 return dbConfig;
               }
             }
 
-            // Fallback para SQLite
-            this.logger.log('✅ Usando SQLite local (configuração padrão)');
+            // Fallback para better-sqlite3
+            this.logger.log('✅ Usando better-sqlite3 local (configuração padrão)')
             return {
-              type: 'sqlite',
+              type: 'better-sqlite3',
               database: 'database.sqlite',
               entities: [Ticket],
               synchronize: true,
             };
+            
           },
         }),
       ],

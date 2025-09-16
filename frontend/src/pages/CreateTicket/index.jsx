@@ -113,7 +113,7 @@ function CreateTicket() {
     for (const url of removedImageUrls) {
       try {
         const filename = url.split("/").pop();
-        await fetch(`${backendUrl}/upload/image/${filename}`, {
+        await fetch(`${backendUrl}upload/image/${filename}`, {
           method: "DELETE",
         });
         console.log(`Imagem ${filename} removida do servidor.`);
@@ -129,7 +129,7 @@ function CreateTicket() {
       const formData = new FormData();
       formData.append("file", fileObj.file);
       try {
-        const res = await fetch(`${backendUrl}/upload/image`, {
+        const res = await fetch(`${backendUrl}upload/image`, {
           method: "POST",
           body: formData,
         });

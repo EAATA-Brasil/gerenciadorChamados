@@ -27,9 +27,9 @@ export function getDatabaseConfig() {
     }
   }
 
-  // ✅ Se não configurou nada → usa SQLite por padrão
+  // ✅ Se não configurou nada → usa better-sqlite3 por padrão
   return {
-    type: "sqlite" as const,
+    type: "better-sqlite3" as const, // Alterado de "sqlite" para "better-sqlite3"
     database: "./data.sqlite",
     autoLoadEntities: true,
     synchronize: true,
