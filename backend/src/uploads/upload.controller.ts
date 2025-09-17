@@ -47,7 +47,7 @@ export class UploadController {
   @Post('image')
   @UseInterceptors(FileInterceptor('file', {
     storage: diskStorage({
-      destination: (req, file, cb) => cb(null, resolveUploadsPath(new ConfigService())), // garantir criação
+      destination: (req, file, cb) => cb(null, resolveUploadsPath(new ConfigService())),
       filename: (req, file, cb) => {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
         cb(null, uniqueSuffix + extname(file.originalname));
@@ -55,8 +55,13 @@ export class UploadController {
     }),
   }))
   uploadImage(@UploadedFile() file: any, @Req() req: Request) {
-    const baseUrl = this.configService.get<string>('BASE_URL') 
+    let baseUrl = this.configService.get<string>('BASE_URL') 
       || `${req.secure || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http'}://${req.headers.host}`;
+
+    // 🔹 Garante que termina com "/"
+    if (!baseUrl.endsWith('/')) {
+      baseUrl += '/';
+    }
 
     return {
       url: `${baseUrl}upload/uploads/${file.filename}`,
