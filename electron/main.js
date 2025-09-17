@@ -8,7 +8,6 @@ let mainWindow;
 let splashWindow;
 let tray;
 let backendProcess;
-let backendScriptPath;
 let socket = null;
 
 // ✅ Caminho do config.json
@@ -23,6 +22,7 @@ function readConfig() {
     return {};
   }
 }
+
 function saveConfig(data) {
   fs.writeFileSync(CONFIG_PATH, JSON.stringify(data, null, 2), 'utf-8');
 }
@@ -40,19 +40,15 @@ function connectWebSocket(backendUrl) {
     socket = null;
   }
 
-  // Remove a última barra se existir
   const normalizedUrl = backendUrl.endsWith('/')
     ? backendUrl.slice(0, -1)
     : backendUrl;
 
-  // Se tiver mais de 3 partes, significa que tem prefixo (ex: /helpdesk)
   const urlParts = normalizedUrl.split('/');
   const hasPrefix = urlParts.length > 3;
-
-  // Se tiver prefixo, pegamos só o último segmento
   const prefix = hasPrefix ? `/${urlParts.at(-1)}` : '';
 
-  const wsUrl = `${urlParts[0]}//${urlParts[2]}`; // sempre usamos a mesma base
+  const wsUrl = `${urlParts[0]}//${urlParts[2]}`;
   const wsPath = `${prefix}/socket.io/` || '/socket.io/';
 
   console.log(`🔌 Conectando ao WebSocket: ${wsUrl} (path: ${wsPath})`);
@@ -65,14 +61,9 @@ function connectWebSocket(backendUrl) {
   });
 
   socket.on('connect', () => console.log('✅ WebSocket conectado'));
-
-  socket.on('connect_error', (err) => {
-    console.error('❌ connect_error:', err.message);
-  });
-
+  socket.on('connect_error', (err) => console.error('❌ connect_error:', err.message));
   socket.on('disconnect', () => console.log('⚠️ WebSocket desconectado'));
 
-  
   socket.on('nova_chamada', (call) => {
     console.log('📢 Nova chamada recebida via WS:', call);
     if (areNotificationsEnabled()) {
@@ -86,20 +77,14 @@ function connectWebSocket(backendUrl) {
   });
 }
 
-
-
 // ✅ Handlers IPC
-ipcMain.handle('get-backend-url', () => {
-  return getBackendUrl();
-});
-
+ipcMain.handle('get-backend-url', () => getBackendUrl());
 ipcMain.on('update-backend-url', (event, newUrl) => {
   const config = readConfig();
   config.backendUrl = newUrl;
   saveConfig(config);
-
   console.log(`✅ Backend URL atualizada para: ${newUrl}`);
-  connectWebSocket(newUrl); // reconecta WebSocket na nova URL
+  connectWebSocket(newUrl);
 });
 
 ipcMain.handle('get-notification-preference', () => {
@@ -111,81 +96,66 @@ ipcMain.on('set-notification-preference', (event, enabled) => {
   const config = readConfig();
   config.notificationsEnabled = enabled;
   saveConfig(config);
-  console.log(`🔔 Notificações ${enabled ? 'ativadas' : 'desativadas'} para este usuário`);
+  console.log(`🔔 Notificações ${enabled ? 'ativadas' : 'desativadas'}`);
 });
 
+// ✅ Função que retorna o caminho do backend
+function getBackendExecutable() {
+  const backendName = process.platform === 'win32' ? 'eaata-help-desk-win.exe' : 'eaata-help-desk-linux';
+  if (app.isPackaged) {
+    return path.join(process.resourcesPath, 'app.asar.unpacked', 'builds', 'backend', backendName);
+  } else {
+    return path.join(__dirname, '..', 'backend', 'builds', backendName);
+  }
+}
 
 // ✅ Inicia backend NestJS
 function startBackend() {
-  if (app.isPackaged) {
-    backendScriptPath = path.join(process.resourcesPath, 'app.asar.unpacked', 'builds', 'backend', 'backend.exe');
-    backendProcess = spawn(backendScriptPath, [], {
-      cwd: path.dirname(backendScriptPath),
-      stdio: ['pipe', 'pipe', 'pipe'],
-    });
-  } else {
-    backendScriptPath = path.join(__dirname, '..', 'backend', 'dist', 'main.js');
-    backendProcess = spawn('node', [backendScriptPath], {
-      cwd: path.dirname(backendScriptPath),
-      stdio: ['pipe', 'pipe', 'pipe'],
-    });
+  const backendPath = getBackendExecutable();
+
+  if (process.platform !== 'win32' && app.isPackaged) {
+    try { fs.chmodSync(backendPath, '755'); } 
+    catch (err) { console.error('Erro ao setar permissão de execução no backend:', err); }
   }
+
+  const spawnCmd = app.isPackaged ? backendPath : 'node';
+  const spawnArgs = app.isPackaged ? [] : [backendPath];
+
+  backendProcess = spawn(spawnCmd, spawnArgs, {
+    cwd: path.dirname(backendPath),
+    stdio: ['pipe', 'pipe', 'pipe'],
+    shell: process.platform === 'win32',
+  });
 
   backendProcess.stdout.on('data', (data) => {
     const message = data.toString();
+    console.log(`[BACKEND]: ${message}`);
 
     if (message.includes('Nova chamada')) {
-      const jsonPart = message.replace('Nova chamada ', '').trim();
       try {
-        const call = JSON.parse(jsonPart);
+        const call = JSON.parse(message.replace('Nova chamada ', '').trim());
         new Notification({
           title: `Nova chamada - ${call.department}`,
           body: call.title,
           silent: false,
           icon: path.join(__dirname, 'assets', 'icon.png'),
         }).show();
-      } catch (err) {
-        console.error('Erro ao parsear nova chamada:', err);
-      }
+      } catch (err) { console.error('Erro ao parsear nova chamada:', err); }
     }
 
-    if (message.includes('Reiniciar backend')) {
-      new Notification({
-        title: 'Reiniciando backend!',
-        body: 'Nova configuração de banco de dados',
-        silent: false,
-        icon: path.join(__dirname, 'assets', 'icon.png'),
-      }).show();
-      restartBackend();
-    }
-
+    if (message.includes('Reiniciar backend')) restartBackend();
     if (message.includes('Aplicação rodando em')) {
-      console.log('✅ Backend pronto, fechando splash e abrindo app');
-      if (splashWindow) {
-        splashWindow.close();
-        splashWindow = null;
-      }
+      if (splashWindow) { splashWindow.close(); splashWindow = null; }
       createWindow();
       connectWebSocket(getBackendUrl());
     }
-
-    console.log(`[BACKEND]: ${message}`);
   });
 
-  backendProcess.stderr.on('data', (data) => {
-    console.error(`[BACKEND ERROR]: ${data.toString()}`);
-  });
-
-  backendProcess.on('exit', (code) => {
-    console.log(`Backend saiu com código: ${code}`);
-    if (!mainWindow && splashWindow) {
-      splashWindow.close();
-      splashWindow = null;
-      createWindow();
-    }
-  });
+  backendProcess.stderr.on('data', (data) => console.error(`[BACKEND ERROR]: ${data.toString()}`));
+  backendProcess.on('exit', (code) => console.log(`Backend saiu com código: ${code}`));
 }
 
+// ✅ Reinicia backend
 function restartBackend() {
   if (backendProcess) backendProcess.kill();
   startBackend();
@@ -197,6 +167,7 @@ function restartBackend() {
   }).show();
 }
 
+// ✅ Splash
 function createSplash() {
   splashWindow = new BrowserWindow({
     width: 400,
@@ -209,15 +180,12 @@ function createSplash() {
     show: true,
     icon: path.join(__dirname, 'assets', 'icon.png'),
   });
-
   splashWindow.loadFile(path.join(__dirname, 'splash.html'));
 }
 
+// ✅ Main Window
 function createWindow() {
-  if (mainWindow) {
-    mainWindow.show();
-    return;
-  }
+  if (mainWindow) { mainWindow.show(); return; }
 
   mainWindow = new BrowserWindow({
     width: 1200,
@@ -226,7 +194,7 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      preload: path.join(__dirname, 'preload.js'), // para expor electronAPI
+      preload: path.join(__dirname, 'preload.js'),
     },
   });
 
@@ -238,22 +206,19 @@ function createWindow() {
   }
 
   mainWindow.on('close', (event) => {
-    if (!app.isQuiting) {
-      event.preventDefault();
-      mainWindow.hide();
-    }
+    if (!app.isQuiting) { event.preventDefault(); mainWindow.hide(); }
   });
 
   mainWindow.focus();
 }
 
+// ✅ Notificações habilitadas?
 function areNotificationsEnabled() {
   const config = readConfig();
   return config.notificationsEnabled !== false; // padrão TRUE
 }
 
-
-// ✅ Tray + inicialização
+// ✅ Tray
 app.setName('EAATA Help Desk');
 app.setAppUserModelId('com.eaata.helpdesk');
 
@@ -261,11 +226,7 @@ app.whenReady().then(() => {
   tray = new Tray(path.join(__dirname, 'assets', 'icon.png'));
   tray.setToolTip('EAATA Help Desk');
 
-  tray.on('click', () => {
-    if (!mainWindow) createWindow();
-    else mainWindow.show();
-  });
-
+  tray.on('click', () => { if (!mainWindow) createWindow(); else mainWindow.show(); });
   tray.on('right-click', () => {
     const rightMenu = Menu.buildFromTemplate([
       { label: 'Abrir', click: () => { if (!mainWindow) createWindow(); else mainWindow.show(); } },
@@ -290,6 +251,4 @@ app.on('before-quit', () => {
   if (backendProcess) backendProcess.kill();
 });
 
-app.on('activate', () => {
-  if (mainWindow === null) createWindow();
-});
+app.on('activate', () => { if (mainWindow === null) createWindow(); });
