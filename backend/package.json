@@ -23,7 +23,9 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "pkg": "npm run build && pkg . --targets node18-win-x64 --output backend.exe --public-packages crypto",
+    "pkg:win": "npm run build && pkg . --targets node18-win-x64 --output dist/backend.exe --public-packages crypto",
+    "pkg:linux": "npm run build && pkg . --targets node18-linux-x64 --output dist/backend --public-packages crypto",
+    "pkg:all": "npm run build && pkg . --targets node18-win-x64,node18-linux-x64 --out-path dist --public-packages crypto",
     "nexe": "npm run build && npx nexe dist/main.js -o backend.exe --target windows-x64-16.20.2"
   },
   "pkg": {
