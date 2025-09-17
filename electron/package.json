@@ -2,6 +2,7 @@
   "name": "eaata-helpdesk",
   "version": "1.0.0",
   "main": "main.js",
+  "homepage": "br.eaata.pro",
   "author": {
     "name": "Yago DEV",
     "email": "yago.eaatabrasil@gmail.com"
