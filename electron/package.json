@@ -2,6 +2,10 @@
   "name": "eaata-helpdesk",
   "version": "1.0.0",
   "main": "main.js",
+  "author": {
+    "name": "Yago DEV",
+    "email": "yago.eaatabrasil@gmail.com"
+  },
   "scripts": {
     "start": "npm run build-dev:backend && electron .",
     "install:all": "npm run install:electron && concurrently \"npm run install:backend\" \"npm run install:frontend\"",
