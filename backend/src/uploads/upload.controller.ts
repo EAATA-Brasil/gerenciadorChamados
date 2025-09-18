@@ -71,6 +71,32 @@ export class UploadController {
     };
   }
 
+  @Post('file') // Novo endpoint para upload de arquivos genéricos
+  @UseInterceptors(FileInterceptor('file', {
+    storage: diskStorage({
+      destination: (req, file, cb) => cb(null, resolveUploadsPath(new ConfigService())),
+      filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+        cb(null, uniqueSuffix + extname(file.originalname));
+      },
+    }),
+  }))
+  uploadFile(@UploadedFile() file: any, @Req() req: Request) {
+    let baseUrl = this.configService.get<string>('BASE_URL') 
+      || `${req.secure || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http'}://${req.headers.host}`;
+
+    if (!baseUrl.endsWith('/')) {
+      baseUrl += '/';
+    }
+
+    return {
+      url: `${baseUrl}upload/uploads/${file.filename}`,
+      filename: file.filename,
+      originalname: file.originalname,
+      size: file.size,
+    };
+  }
+
   @Delete('image/:filename')
   deleteImage(@Param('filename') filename: string, @Res() res: Response) {
     const filePath = join(this.uploadPath, filename);
@@ -101,9 +127,11 @@ export class UploadController {
       '.png': 'image/png',
       '.webp': 'image/webp',
       '.gif': 'image/gif',
+      '.pdf': 'application/pdf', // Adicionado tipo MIME para PDF
     };
 
     res.setHeader('Content-Type', mimeTypes[ext] || 'application/octet-stream');
     return res.sendFile(filePath);
   }
 }
+

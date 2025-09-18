@@ -14,21 +14,26 @@ function CreateTicket() {
   const [description, setDescription] = useState("");
   const [status] = useState("open");
   const [message, setMessage] = useState("");
-  const [uploadedFiles, setUploadedFiles] = useState([]);
+  
+  // Estados para arquivos
+  const [uploadedImages, setUploadedImages] = useState([]); // Renomeado de uploadedFiles
+  const [uploadedPdfs, setUploadedPdfs] = useState([]); // Novo estado para PDFs
   const [serverImageUrls, setServerImageUrls] = useState([]);
+  
   const { backendUrl } = useBackend();
 
-  const API_URL = backendUrl+'tickets';
-  console.log(backendUrl);
+  const API_URL = backendUrl + 'tickets';
   
-  const fileInputRef = useRef(null);
+  // Refs para os inputs de arquivo
+  const imageInputRef = useRef(null); // Renomeado de fileInputRef
+  const pdfInputRef = useRef(null); // Novo ref para PDF
 
   const handleLocalImage = (editor, file) => {
     const reader = new FileReader();
     reader.onload = () => {
       const url = reader.result;
       editor.chain().focus().setImage({ src: url }).run();
-      setUploadedFiles((prevFiles) => [...prevFiles, { file, dataUrl: url }]);
+      setUploadedImages((prevFiles) => [...prevFiles, { file, dataUrl: url }]);
     };
     reader.readAsDataURL(file);
   };
@@ -37,10 +42,7 @@ function CreateTicket() {
     extensions: [StarterKit, Image, LinkExtension],
     content: "",
     onCreate: ({ editor }) => {
-      // ✅ DOM do editor agora está pronto
       const dom = editor.view.dom;
-
-      // Evento de colar imagem
       dom.addEventListener("paste", (event) => {
         const items = event.clipboardData?.items;
         if (!items) return;
@@ -54,8 +56,6 @@ function CreateTicket() {
           }
         }
       });
-
-      // Evento de arrastar/soltar imagem
       dom.addEventListener("drop", (event) => {
         event.preventDefault();
         const files = event.dataTransfer?.files;
@@ -70,15 +70,11 @@ function CreateTicket() {
     onUpdate: ({ editor }) => {
       const currentHtml = editor.getHTML();
       setDescription(currentHtml);
-
-      // Extrai as imagens que ainda estão no conteúdo
       const parser = new DOMParser();
       const doc = parser.parseFromString(currentHtml, "text/html");
       const imgElements = Array.from(doc.querySelectorAll("img"));
       const currentImageSrcs = imgElements.map((img) => img.src);
-
-      // Mantém apenas os arquivos ainda presentes no conteúdo
-      setUploadedFiles((prevFiles) =>
+      setUploadedImages((prevFiles) =>
         prevFiles.filter((fileObj) =>
           currentImageSrcs.includes(fileObj.dataUrl)
         )
@@ -86,9 +82,12 @@ function CreateTicket() {
     },
   });
 
-  const triggerFileSelect = () => fileInputRef.current?.click();
+  // Funções para disparar o clique nos inputs
+  const triggerImageSelect = () => imageInputRef.current?.click();
+  const triggerPdfSelect = () => pdfInputRef.current?.click();
 
-  const handleFileChange = (event) => {
+  // Handler para mudança de arquivo de imagem
+  const handleImageChange = (event) => {
     const file = event.target.files[0];
     if (file && file.type.startsWith("image/") && editor) {
       handleLocalImage(editor, file);
@@ -96,27 +95,42 @@ function CreateTicket() {
     event.target.value = "";
   };
 
+  // Novo handler para mudança de arquivo PDF
+  const handlePdfChange = (event) => {
+    const file = event.target.files[0];
+    if (file && file.type === "application/pdf") {
+      // Evita adicionar o mesmo arquivo duas vezes
+      if (!uploadedPdfs.some(p => p.name === file.name)) {
+        setUploadedPdfs((prevPdfs) => [...prevPdfs, file]);
+      }
+    }
+    event.target.value = "";
+  };
+
+  // Função para remover um PDF da lista
+  const removePdf = (fileName) => {
+    setUploadedPdfs(uploadedPdfs.filter(pdf => pdf.name !== fileName));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // ... (lógica de remoção de imagem do servidor permanece a mesma)
     let currentImageUrlsInEditor = [];
     editor.state.doc.descendants((node) => {
       if (node.type.name === "image" && node.attrs.src) {
         currentImageUrlsInEditor.push(node.attrs.src);
       }
     });
-
     const removedImageUrls = serverImageUrls.filter(
       (url) => !currentImageUrlsInEditor.includes(url)
     );
-
     for (const url of removedImageUrls) {
       try {
         const filename = url.split("/").pop();
         await fetch(`${backendUrl}upload/image/${filename}`, {
           method: "DELETE",
         });
-        console.log(`Imagem ${filename} removida do servidor.`);
       } catch (error) {
         console.error(`Erro ao remover imagem ${url} do servidor:`, error);
       }
@@ -125,7 +139,8 @@ function CreateTicket() {
     let finalDescription = description;
     const newServerImageUrls = [];
 
-    for (const fileObj of uploadedFiles) {
+    // Upload de imagens
+    for (const fileObj of uploadedImages) {
       const formData = new FormData();
       formData.append("file", fileObj.file);
       try {
@@ -137,10 +152,39 @@ function CreateTicket() {
         newServerImageUrls.push(data.url);
         finalDescription = finalDescription.replace(fileObj.dataUrl, data.url);
       } catch (error) {
-        console.error("Erro ao enviar imagem durante o submit:", error);
         setMessage(`❌ ERRO ao enviar imagem: ${error.message}`);
         return;
       }
+    }
+
+    // Upload de PDFs e adição dos links na descrição
+    const pdfLinks = [];
+    for (const pdfFile of uploadedPdfs) {
+        const formData = new FormData();
+        formData.append("file", pdfFile);
+        try {
+            // Assumindo um endpoint genérico para arquivos
+            const res = await fetch(`${backendUrl}upload/file`, {
+                method: "POST",
+                body: formData,
+            });
+            const data = await res.json();
+            // Cria um link HTML para o PDF
+            pdfLinks.push(`<a href="${data.url}" target="_blank" rel="noopener noreferrer">${pdfFile.name}</a>`);
+        } catch (error) {
+            setMessage(`❌ ERRO ao enviar PDF: ${error.message}`);
+            return;
+        }
+    }
+
+    // Adiciona a lista de links de PDF ao final da descrição
+    if (pdfLinks.length > 0) {
+        finalDescription += `
+            <p><strong>Anexos:</strong></p>
+            <ul>
+                ${pdfLinks.map(link => `<li>${link}</li>`).join('')}
+            </ul>
+        `;
     }
 
     try {
@@ -162,7 +206,8 @@ function CreateTicket() {
       setDepartment("");
       setTitle("");
       setDescription("");
-      setUploadedFiles([]);
+      setUploadedImages([]);
+      setUploadedPdfs([]); // Limpa a lista de PDFs
       setServerImageUrls(newServerImageUrls);
       editor.commands.clearContent();
     } catch (err) {
@@ -182,6 +227,7 @@ function CreateTicket() {
       </div>
 
       <form className={styles.createTicketForm} onSubmit={handleSubmit}>
+        {/* ... campos de Categoria e Título ... */}
         <label>Categoria</label>
         <select
           value={department}
@@ -219,14 +265,24 @@ function CreateTicket() {
           >
             • Lista
           </button>
-          <button type="button" onClick={triggerFileSelect}>
-            📁 Upload de imagem
+          <button type="button" onClick={triggerImageSelect}>
+            🖼️ Upload de imagem
+          </button>
+          <button type="button" onClick={triggerPdfSelect}>
+            📄 Upload de PDF
           </button>
           <input
             type="file"
             accept="image/*"
-            ref={fileInputRef}
-            onChange={handleFileChange}
+            ref={imageInputRef}
+            onChange={handleImageChange}
+            style={{ display: "none" }}
+          />
+          <input
+            type="file"
+            accept="application/pdf"
+            ref={pdfInputRef}
+            onChange={handlePdfChange}
             style={{ display: "none" }}
           />
         </div>
@@ -237,6 +293,23 @@ function CreateTicket() {
         >
           <EditorContent editor={editor} />
         </div>
+
+        {/* Lista de PDFs anexados */}
+        {uploadedPdfs.length > 0 && (
+          <div className={styles.pdfList}>
+            <strong>PDFs anexados:</strong>
+            <ul>
+              {uploadedPdfs.map((pdf, index) => (
+                <li key={index}>
+                  {pdf.name}
+                  <button type="button" onClick={() => removePdf(pdf.name)} className={styles.removePdfBtn}>
+                    &times;
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         <button type="submit" className={styles.btnSave}>
           Criar Ticket

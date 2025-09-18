@@ -1,5 +1,5 @@
 import { join } from 'path';
-import { existsSync, readFileSync } from 'fs';
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs';
 import * as os from 'os';
 
 function getUserDataPath(appName: string): string {
@@ -15,21 +15,43 @@ function getUserDataPath(appName: string): string {
   }
 }
 
-export default () => {
-  const appName = 'eaata-helpdesk';
-  const userDataPath = getUserDataPath(appName);
-  const configPath = join(userDataPath, 'config.json');
+const appName = 'eaata-helpdesk';
+const userDataPath = getUserDataPath(appName);
+const configPath = join(userDataPath, 'config.json');
 
-  let backendUrl: string | undefined;
 
+function readConfig(): Record<string, any> {
   if (existsSync(configPath)) {
     try {
-      const config = JSON.parse(readFileSync(configPath, 'utf-8'));
-      backendUrl = config.backendUrl;
-    } catch (err) {
+      return JSON.parse(readFileSync(configPath, 'utf-8'));
+    } catch (err: any) {
       console.warn('[CONFIG] Falha ao ler config.json:', err.message);
     }
   }
+  return {};
+}
+
+
+export function updateConfig(newValues: Record<string, any>): void {
+  try {
+    // garante que a pasta existe
+    mkdirSync(userDataPath, { recursive: true });
+
+    const current = readConfig();
+    const updated = { ...current, ...newValues };
+
+    writeFileSync(configPath, JSON.stringify(updated, null, 2), 'utf-8');
+    console.log('[CONFIG] Configuração atualizada em', configPath);
+  } catch (err: any) {
+    console.error('[CONFIG] Erro ao atualizar config.json:', err.message);
+  }
+}
+
+export default () => {
+  let backendUrl: string | undefined;
+
+  const config = readConfig();
+  backendUrl = config.backendUrl;
 
   return {
     BASE_URL: backendUrl || process.env.BASE_URL || null,

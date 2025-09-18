@@ -106,6 +106,39 @@
 .btnCreate:hover {
   opacity: 0.9;
 }
+.pdfList {
+  margin-top: 15px;
+  padding: 10px;
+  border-radius: 4px;
+}
+
+.pdfList ul {
+  list-style-type: none;
+  padding-left: 0;
+  margin-top: 5px;
+}
+
+.pdfList li {
+  background: #2a2a2a;
+  color: var(--text);
+  border: 1px solid var(--border);
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px;
+  border-radius: 3px;
+  margin-bottom: 5px;
+}
+
+.removePdfBtn {
+  background: none;
+  border: none;
+  color: red;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0 5px;
+}
 
 /* Responsivo */
 @media (max-width: 768px) {
@@ -117,3 +150,5 @@
     min-height: 120px;
   }
 }
+
+

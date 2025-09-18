@@ -99,6 +99,7 @@
 }
 
 .ticketDesc {
+  display: flex;
   opacity: 0.8;
   margin-top: 6px;
   font-size: 0.9rem;
@@ -106,14 +107,28 @@
   overflow-wrap: break-word;
   max-width: 100%;
   overflow: hidden;
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
+.ticketDesc p:not(:empty){
+  min-width: 100%;
+}
+
+.ticketDesc a{
+  color: #fff;
+}
+.ticketDesc a:visited{
+  color: var(--accent)
 }
 
 .ticketDesc img {
-  max-width: 25%;
+  max-width: 15%;
   height: auto;
   display: block;
   border-radius: 4px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin: 10px;
 }
 
 /* Paginação */
@@ -230,6 +245,16 @@
 .modalContent img{
   width: 100%;
 }
+
+ 
+.modalContent a{
+  color: #fff;
+}
+.modalContent a:visited{
+  color: var(--accent)
+}
+
+
 
 /* Botões */
 .btnSave {
