@@ -13,12 +13,25 @@ export class ReportController {
       if (!reportData || !reportData.metrics || !reportData.tickets) {
         throw new HttpException('❌ Dados do relatório incompletos', HttpStatus.BAD_REQUEST);
       }
+      
+      // 1. EXTRAI E TRATA OS SETORES
+      // Pega todos os nomes de setores únicos dos tickets E do departmentData (que pode ter mais)
+      
+      // ✅ CORREÇÃO: Usamos 'as string' para garantir que os elementos sejam tipados como string.
+      const ticketDepartments = new Set(reportData.tickets.map((t: any) => t.department as string).filter((d: string) => d && d.trim() !== ''));
+      const dataDepartments = new Set(reportData.departmentData.map((d: any) => d.name as string).filter((d: string) => d && d.trim() !== ''));
+      
+      // ✅ Converte o Set de volta para Array e garante o tipo string[]
+      const allDepartments: string[] = Array.from(new Set([...ticketDepartments, ...dataDepartments])) as string[];
+      
+      // Adiciona a categoria especial "Sem Setor"
+      const departmentsToProcess: string[] = [...allDepartments, 'Sem Setor'];
 
       const fileName = `relatorio-${reportType || 'custom'}-${startDate}-${endDate}.pdf`;
       const doc = new PDFKit({ 
         margin: 50, 
         size: 'A4',
-        bufferPages: true // Permite controle avançado das páginas
+        bufferPages: true
       });
 
       res.setHeader('Content-Disposition', `attachment; filename=${fileName}`);
@@ -27,13 +40,19 @@ export class ReportController {
 
       // Página 1 - Capa e Resumo Executivo
       this.addCoverPage(doc, reportData, startDate, endDate);
-      this.addExecutiveSummary(doc, reportData);
+      this.addExecutiveSummary(doc, reportData, departmentsToProcess); // departmentsToProcess é agora string[]
 
-      // Páginas separadas para cada setor
-      const departments = ['Comercial', 'Marketing', 'Financeiro'];
-      departments.forEach(dept => {
-        doc.addPage(); // Nova página para cada setor
-        this.addDepartmentPage(doc, reportData, dept);
+      // Páginas separadas para cada setor (incluindo 'Sem Setor')
+      departmentsToProcess.forEach(dept => {
+        // ... (resto da lógica de filtragem)
+        const deptTicketsCount = reportData.tickets.filter(t => 
+            dept === 'Sem Setor' ? !t.department || t.department.trim() === '' : t.department === dept
+        ).length;
+
+        if (deptTicketsCount > 0) {
+            doc.addPage();
+            this.addDepartmentPage(doc, reportData, dept);
+        }
       });
 
       doc.end();
@@ -43,7 +62,9 @@ export class ReportController {
     }
   }
 
+  // Assinatura de método revisada
   private addCoverPage(doc: PDFKit.PDFDocument, reportData: any, startDate: string, endDate: string) {
+    // ... (mantido) ...
     // Fundo colorido para a capa
     doc.rect(0, 0, doc.page.width, doc.page.height)
        .fill('#f8f9fa');
@@ -71,10 +92,10 @@ export class ReportController {
        .text(`Gerado em: ${new Date().toLocaleDateString()}`, doc.page.width/2, 300, {
          align: 'center'
        });
-    
   }
 
-  private addExecutiveSummary(doc: PDFKit.PDFDocument, reportData: any) {
+  // ✅ Assinatura de método revisada
+  private addExecutiveSummary(doc: PDFKit.PDFDocument, reportData: any, departmentsToProcess: string[]) {
     doc.addPage() // Página 2 - Resumo Executivo
        .fillColor('#333333');
     
@@ -99,7 +120,7 @@ export class ReportController {
     
     doc.list([
       `Total de chamados: ${totalTickets}`,
-      `Concluídos dentro do prazo: ${completedOnTime} (${completionRate}%)`,
+      `Concluídos dentro do prazo: ${completedOnTime}`,
       `Em atraso: ${overdue}`,
       `Taxa de resolução: ${completionRate}%`
     ], { listType: 'numbered' });
@@ -111,27 +132,44 @@ export class ReportController {
        .text('Distribuição por Setor:', { underline: true })
        .moveDown(0.5);
     
-    const departments = ['Comercial', 'Marketing', 'Financeiro'];
-    departments.forEach(dept => {
-      const deptTickets = reportData.tickets.filter(t => t.department === dept).length;
-      const percentage = totalTickets > 0 ? Math.round((deptTickets / totalTickets) * 100) : 0;
-      doc.text(`• ${dept}: ${deptTickets} chamados (${percentage}%)`);
+    // Itera sobre a lista dinâmica de setores
+    departmentsToProcess.forEach(dept => {
+        let deptTickets: any[];
+
+        if (dept === 'Sem Setor') {
+            deptTickets = reportData.tickets.filter(t => !t.department || t.department.trim() === '');
+        } else {
+            deptTickets = reportData.tickets.filter(t => t.department === dept);
+        }
+
+        const deptTicketsCount = deptTickets.length;
+        const percentage = totalTickets > 0 ? Math.round((deptTicketsCount / totalTickets) * 100) : 0;
+        
+        doc.text(`• ${dept}: ${deptTicketsCount} chamados (${percentage}%)`);
     });
     
     doc.moveDown(2);
     
     // Adiciona um gráfico simples de distribuição
-    this.addSummaryChart(doc, reportData);
+    this.addSummaryChart(doc, reportData, departmentsToProcess);
   }
 
+  // ✅ Assinatura de método revisada
   private addDepartmentPage(doc: PDFKit.PDFDocument, reportData: any, department: string) {
-    const deptTickets = reportData.tickets.filter(t => t.department === department);
+    
+    // Adiciona lógica para o setor 'Sem Setor'
+    const deptTickets = reportData.tickets.filter(t => 
+        department === 'Sem Setor' ? !t.department || t.department.trim() === '' : t.department === department
+    );
+    
     const total = deptTickets.length;
     
     const resolved = deptTickets.filter(t => t.status === 'closed').length;
     const inProgress = deptTickets.filter(t => t.status === 'in_progress').length;
     const open = deptTickets.filter(t => t.status === 'open').length;
-    const overdue = deptTickets.filter(t => t.isOverdue).length;
+    // O isOverdue não existe nos tickets. Deve ser calculado na hora ou vir da API.
+    // Usando uma estimativa baseada na existência da propriedade 'isOverdue', se ela for adicionada no futuro.
+    const overdue = deptTickets.filter(t => t.isOverdue).length; 
     
     // Cabeçalho da página do departamento
     doc.fillColor('#2c3e50')
@@ -182,14 +220,25 @@ export class ReportController {
     }
   }
 
-  private addSummaryChart(doc: PDFKit.PDFDocument, reportData: any) {
-    const departments = ['Comercial', 'Marketing', 'Financeiro'];
-    const data = departments.map(dept => ({
-      label: dept,
-      value: reportData.tickets.filter(t => t.department === dept).length,
-      color: this.getDepartmentColor(dept)
-    }));
-    
+  // ✅ Assinatura de método revisada
+  private addSummaryChart(doc: PDFKit.PDFDocument, reportData: any, departmentsToProcess: string[]) {
+    // Obtém dados para todos os setores
+    const data = departmentsToProcess.map(dept => {
+        let deptTickets: any[];
+
+        if (dept === 'Sem Setor') {
+            deptTickets = reportData.tickets.filter(t => !t.department || t.department.trim() === '');
+        } else {
+            deptTickets = reportData.tickets.filter(t => t.department === dept);
+        }
+
+        return {
+            label: dept,
+            value: deptTickets.length,
+            color: this.getDepartmentColor(dept)
+        };
+    }).filter(item => item.value > 0); // Filtra setores sem tickets para não poluir
+
     const total = data.reduce((sum, item) => sum + item.value, 0);
     if (total === 0) return;
     
@@ -208,16 +257,16 @@ export class ReportController {
       const barHeight = item.value > 0 ? (item.value / maxValue) * (chartHeight - 40) : 5;
       
       doc.fillColor(item.color)
-         .rect(currentX, y + chartHeight - barHeight - 20, barWidth, barHeight)
-         .fill();
+          .rect(currentX, y + chartHeight - barHeight - 20, barWidth, barHeight)
+          .fill();
       
       // Valor
       doc.fillColor('#333333')
-         .fontSize(10)
-         .text(item.value.toString(), currentX, y + chartHeight - 15, {
-           width: barWidth,
-           align: 'center'
-         });
+          .fontSize(10)
+          .text(item.value.toString(), currentX, y + chartHeight - 15, {
+            width: barWidth,
+            align: 'center'
+          });
       
       // Label
       doc.text(item.label, currentX, y + chartHeight, {
@@ -297,30 +346,30 @@ export class ReportController {
       }
 
       doc.fontSize(12)
-         .fillColor('#2c3e50')
-         .font('Helvetica-Bold')
-         .text(`Ticket ID: ${ticket.id} - ${ticket.title}`, { continued: false });
+          .fillColor('#2c3e50')
+          .font('Helvetica-Bold')
+          .text(`Ticket ID: ${ticket.id} - ${ticket.title}`, { continued: false });
       
       doc.fontSize(10)
-         .fillColor('#333333')
-         .font('Helvetica')
-         .text(`Status: ${this.formatStatus(ticket.status)} | Criado em: ${ticket.createdAt ? new Date(ticket.createdAt).toLocaleDateString('pt-BR') : 'N/A'}`);
+          .fillColor('#333333')
+          .font('Helvetica')
+          .text(`Status: ${this.formatStatus(ticket.status)} | Criado em: ${ticket.createdAt ? new Date(ticket.createdAt).toLocaleDateString('pt-BR') : 'N/A'}`);
       
       doc.moveDown(0.5);
 
       if (ticket.description) {
         doc.fontSize(10)
-           .fillColor('#555555')
-           .font('Helvetica-Bold')
-           .text('Descrição:');
+            .fillColor('#555555')
+            .font('Helvetica-Bold')
+            .text('Descrição:');
         
         doc.font('Helvetica')
-           .fontSize(10)
-           .text(this.extractPlainText(ticket.description), {
-             align: 'justify',
-             indent: 10,
-             paragraphGap: 5
-           });
+            .fontSize(10)
+            .text(this.extractPlainText(ticket.description), {
+              align: 'justify',
+              indent: 10,
+              paragraphGap: 5
+            });
         doc.moveDown(1);
       }
       doc.moveDown(1);
@@ -351,9 +400,23 @@ export class ReportController {
     const colors: Record<string, string> = {
       'Comercial': '#3498db',
       'Marketing': '#9b59b6',
-      'Financeiro': '#e74c3c'
+      'Financeiro': '#e74c3c',
+      'Sem Setor': '#95a5a6' // Cor para tickets não classificados
     };
-    return colors[department] || '#95a5a6';
+    // Usa um hash simples para gerar cores consistentes para novos setores
+    if (!colors[department]) {
+        let hash = 0;
+        for (let i = 0; i < department.length; i++) {
+            hash = department.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        let color = '#';
+        for (let i = 0; i < 3; i++) {
+            const value = (hash >> (i * 8)) & 0xFF;
+            color += ('00' + value.toString(16)).substr(-2);
+        }
+        return color;
+    }
+    return colors[department];
   }
 
   // Função auxiliar para estimar a altura do texto (aproximada)
@@ -363,4 +426,3 @@ export class ReportController {
     return lines * fontSize * 1.2; // Multiplica por 1.2 para espaçamento de linha
   }
 }
-

@@ -92,8 +92,11 @@ function Relatorio() {
       const ticketsResponse = await fetch(
         `${API_URL}/report?startDate=${startDate}&endDate=${endDate}${selectedSector ? `&sector=${selectedSector}` : ''}`
       );
+      // ✅ Sempre usamos fetchedTickets para a lógica e métricas
       let fetchedTickets = await ticketsResponse.json();
 
+      // Seu backend já deve filtrar, mas esta linha aqui garante a filtragem pelo setor selecionado
+      // Se a API não filtra, esta linha é essencial:
       if (selectedSector) {
         fetchedTickets = fetchedTickets.filter(ticket => ticket.department === selectedSector);
       }
@@ -142,19 +145,23 @@ function Relatorio() {
             : "Anual"
         }`,
         period: `${startDate} a ${endDate}`,
-        summary: `Este relatório apresenta uma análise detalhada dos tickets no período selecionado. Foram analisados ${tickets.length} tickets no total.`,
-        tickets,
+        // ✅ Corrigido para usar fetchedTickets.length
+        summary: `Este relatório apresenta uma análise detalhada dos tickets no período selecionado. Foram analisados ${fetchedTickets.length} tickets no total.`, 
+        // ✅ Corrigido para usar fetchedTickets
+        tickets: fetchedTickets, 
         statusData,
         departmentData,
         metrics: {
-          total: tickets.length,
+          // ✅ Corrigido para usar fetchedTickets.length
+          total: fetchedTickets.length, 
           resolved,
           pending: open + inProgress,
           completedOnTime,
           overdue,
           completionRate:
-            tickets.length > 0
-              ? Math.round((resolved / tickets.length) * 100)
+            fetchedTickets.length > 0
+              // ✅ Corrigido para usar fetchedTickets.length
+              ? Math.round((resolved / fetchedTickets.length) * 100) 
               : 0,
           avgResolutionTime: "2.5 dias",
         },
