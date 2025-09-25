@@ -1,0 +1,8 @@
+{
+  "type": "postgres",
+  "host": "aws-0-sa-east-1.pooler.supabase.com",
+  "port": "6543",
+  "user": "postgres.tldhrpdyxhyjooghnbir",
+  "password": "Eaata360*",
+  "name": "postgres"
+}
