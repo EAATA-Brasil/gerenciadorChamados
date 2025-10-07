@@ -26,7 +26,7 @@ function CreateTicket() {
   const { backendUrl } = useBackend();
 
   const API_URL = backendUrl + 'tickets';
-  const DEPARTMENTS_API_URL = backendUrl + 'tickets/departments';
+  const DEPARTMENTS_API_URL = backendUrl + 'sectors';
 
   // Refs para os inputs de arquivo
   const imageInputRef = useRef(null);
@@ -147,11 +147,6 @@ function CreateTicket() {
 
     if (!department) {
       alert("Por favor, selecione um departamento");
-      return;
-    }
-
-    if (!description.trim() || description === "<p></p>") {
-      alert("Por favor, descreva o problema ou solicitação");
       return;
     }
 
@@ -299,8 +294,8 @@ function CreateTicket() {
             >
               <option value="">Selecione um departamento</option>
               {departments.map((dept) => (
-                <option key={dept} value={dept}>
-                  {dept}
+                <option key={dept.id} value={dept.name}>
+                  {dept.name}
                 </option>
               ))}
             </select>
@@ -320,7 +315,7 @@ function CreateTicket() {
 
         {/* DESCRIÇÃO COM EDITOR */}
         <div className={styles.formGroup}>
-          <label>Descrição Detalhada *</label>
+          <label>Descrição Detalhada</label>
           <div className={styles.editorToolbar}>
             <button
               type="button"
