@@ -186,14 +186,14 @@ export class TicketsController {
   }
 
   // Relatório por período
-  @Get('report/period')
-  async getReportData(
-    @Query('startDate') startDate: string,
-    @Query('endDate') endDate: string
-  ) {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    return this.ticketsService.getTicketsForReport(start, end);
-  }
+    @Get('/report/period')  // ✅ Mude para uma rota mais específica
+        async getReportData(
+        @Query('startDate') startDate: string,
+        @Query('endDate') endDate: string
+    ) {
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        return this.ticketsService.getTicketsForReport(start, end);
+    }
 }
 

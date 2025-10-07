@@ -78,102 +78,133 @@ function Relatorio() {
     setEndDate(end.toISOString().split("T")[0]);
   }, [reportType]);
 
-  const handleGenerateReport = async () => {
-    if (!startDate || !endDate) {
-      setError("Por favor, selecione as datas de início e fim.");
-      return;
+ const handleGenerateReport = async () => {
+  if (!startDate || !endDate) {
+    setError("Por favor, selecione as datas de início e fim.");
+    return;
+  }
+
+  setError(null);
+  setLoading(true);
+  setReportData(null);
+
+  try {
+    // ✅ ROTA CORRETA - está funcionando!
+    const ticketsResponse = await fetch(
+      `${backendUrl}tickets/report/period?startDate=${startDate}&endDate=${endDate}${selectedSector ? `&sector=${selectedSector}` : ''}`
+    );
+
+    // console.log('Request URL:', `${backendUrl}tickets/report/period?startDate=${startDate}&endDate=${endDate}`);
+    // console.log('Response status:', ticketsResponse.status);
+    
+    // ✅ CORREÇÃO: Use apenas .text() OU .json(), não ambos
+    const responseText = await ticketsResponse.text();
+    // console.log('Raw response length:', responseText.length);
+    
+    if (!ticketsResponse.ok) {
+      throw new Error(`Erro HTTP: ${ticketsResponse.status} - ${responseText}`);
     }
-
-    setError(null);
-    setLoading(true);
-    setReportData(null);
-
+    
+    let fetchedTickets;
     try {
-      const ticketsResponse = await fetch(
-        `${API_URL}/report?startDate=${startDate}&endDate=${endDate}${selectedSector ? `&sector=${selectedSector}` : ''}`
-      );
-      // ✅ Sempre usamos fetchedTickets para a lógica e métricas
-      let fetchedTickets = await ticketsResponse.json();
-
-      // Seu backend já deve filtrar, mas esta linha aqui garante a filtragem pelo setor selecionado
-      // Se a API não filtra, esta linha é essencial:
-      if (selectedSector) {
-        fetchedTickets = fetchedTickets.filter(ticket => ticket.department === selectedSector);
-      }
-
-      const now = new Date();
-      const resolved = fetchedTickets.filter((t) => t.status === "closed").length;
-      const inProgress = fetchedTickets.filter((t) => t.status === "in_progress").length;
-      const open = fetchedTickets.filter((t) => t.status === "open").length;
-
-      const completedOnTime = fetchedTickets.filter((t) => {
-        if (t.dueDate) {
-          return (
-            t.status === "closed" &&
-            t.closedAt &&
-            new Date(t.closedAt) <= new Date(t.dueDate)
-          );
-        } else {
-          return t.status === "closed" && t.closedAt;
-        }
-      }).length;
-
-      const overdue = fetchedTickets.filter(
-        (t) =>
-          t.status !== "closed" &&
-          t.dueDate &&
-          new Date(t.dueDate) < now
-      ).length;
-
-      const statusData = [
-        { name: "Abertos", value: open },
-        { name: "Em andamento", value: inProgress },
-        { name: "Fechados", value: resolved },
-      ];
-
-      const departmentData = sectors.map(sector => ({
-        name: sector.name,
-        value: fetchedTickets.filter(t => t.department === sector.name).length
-      }));
-
-      const data = {
-        title: `Relatório ${
-          reportType === "weekly"
-            ? "Semanal"
-            : reportType === "monthly"
-            ? "Mensal"
-            : "Anual"
-        }`,
-        period: `${startDate} a ${endDate}`,
-        // ✅ Corrigido para usar fetchedTickets.length
-        summary: `Este relatório apresenta uma análise detalhada dos tickets no período selecionado. Foram analisados ${fetchedTickets.length} tickets no total.`, 
-        // ✅ Corrigido para usar fetchedTickets
-        tickets: fetchedTickets, 
-        statusData,
-        departmentData,
-        metrics: {
-          // ✅ Corrigido para usar fetchedTickets.length
-          total: fetchedTickets.length, 
-          resolved,
-          pending: open + inProgress,
-          completedOnTime,
-          overdue,
-          completionRate:
-            fetchedTickets.length > 0
-              // ✅ Corrigido para usar fetchedTickets.length
-              ? Math.round((resolved / fetchedTickets.length) * 100) 
-              : 0,
-          avgResolutionTime: "2.5 dias",
-        },
-      };
-
-      setReportData(data);
-    } catch (err) {
-      setError("Erro ao gerar relatório.");
-      console.error(err);
-    } finally {
-      setLoading(false);
+      fetchedTickets = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error('Erro ao fazer parse JSON:', parseError);
+      throw new Error('Resposta da API não é JSON válido');
     }
+    
+    // console.log('Parsed data type:', typeof fetchedTickets);
+    // console.log('Is Array:', Array.isArray(fetchedTickets));
+    // console.log('Quantidade de tickets:', fetchedTickets.length);
+
+    // ✅ A API já retorna um array - ótimo!
+    // Mas vamos garantir que seja sempre um array
+    if (!Array.isArray(fetchedTickets)) {
+      fetchedTickets = [];
+    }
+    
+    // console.log('Final tickets array:', fetchedTickets);
+
+    // ✅ FILTRO POR SETOR (se necessário)
+    if (selectedSector && fetchedTickets.length > 0) {
+      fetchedTickets = fetchedTickets.filter(ticket => 
+        ticket && ticket.department === selectedSector
+      );
+      console.log('Após filtro por setor:', fetchedTickets.length);
+    }
+
+    // ✅ AGORA pode usar filter com segurança
+    const resolved = fetchedTickets.filter((t) => t.status === "closed").length;
+    const inProgress = fetchedTickets.filter((t) => t.status === "in_progress").length;
+    const open = fetchedTickets.filter((t) => t.status === "open").length;
+
+    const now = new Date();
+    const completedOnTime = fetchedTickets.filter((t) => {
+      if (t.dueDate) {
+        return (
+          t.status === "closed" &&
+          t.closedAt &&
+          new Date(t.closedAt) <= new Date(t.dueDate)
+        );
+      } else {
+        return t.status === "closed" && t.closedAt;
+      }
+    }).length;
+
+    const overdue = fetchedTickets.filter(
+      (t) =>
+        t.status !== "closed" &&
+        t.dueDate &&
+        new Date(t.dueDate) < now
+    ).length;
+
+    const statusData = [
+      { name: "Abertos", value: open },
+      { name: "Em andamento", value: inProgress },
+      { name: "Fechados", value: resolved },
+    ];
+
+    const departmentData = sectors.map(sector => ({
+      name: sector.name,
+      value: fetchedTickets.filter(t => t.department === sector.name).length
+    }));
+
+    const data = {
+      title: `Relatório ${
+        reportType === "weekly"
+          ? "Semanal"
+          : reportType === "monthly"
+          ? "Mensal"
+          : "Anual"
+      }`,
+      period: `${startDate} a ${endDate}`,
+      summary: `Este relatório apresenta uma análise detalhada dos tickets no período selecionado. Foram analisados ${fetchedTickets.length} tickets no total.`,
+      tickets: fetchedTickets,
+      statusData,
+      departmentData,
+      metrics: {
+        total: fetchedTickets.length,
+        resolved,
+        pending: open + inProgress,
+        completedOnTime,
+        overdue,
+        completionRate:
+          fetchedTickets.length > 0
+            ? Math.round((resolved / fetchedTickets.length) * 100)
+            : 0,
+        avgResolutionTime: "2.5 dias",
+      },
+    };
+
+    setReportData(data);
+    console.log('Relatório gerado com sucesso!');
+    
+  } catch (err) {
+    setError(`Erro ao gerar relatório: ${err.message}`);
+    console.error('Erro detalhado:', err);
+  } finally {
+    setLoading(false);
+  }
   };
 
   const handleDownloadPdf = async () => {

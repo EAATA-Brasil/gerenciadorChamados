@@ -221,58 +221,87 @@ export class ReportController {
   }
 
   // ✅ Assinatura de método revisada
+  // ✅ MÉTODO CORRIGIDO: Gráfico se ajusta automaticamente ao número de setores
   private addSummaryChart(doc: PDFKit.PDFDocument, reportData: any, departmentsToProcess: string[]) {
     // Obtém dados para todos os setores
     const data = departmentsToProcess.map(dept => {
-        let deptTickets: any[];
+      let deptTickets: any[];
 
-        if (dept === 'Sem Setor') {
-            deptTickets = reportData.tickets.filter(t => !t.department || t.department.trim() === '');
-        } else {
-            deptTickets = reportData.tickets.filter(t => t.department === dept);
-        }
+      if (dept === 'Sem Setor') {
+        deptTickets = reportData.tickets.filter(t => !t.department || t.department.trim() === '');
+      } else {
+        deptTickets = reportData.tickets.filter(t => t.department === dept);
+      }
 
-        return {
-            label: dept,
-            value: deptTickets.length,
-            color: this.getDepartmentColor(dept)
-        };
-    }).filter(item => item.value > 0); // Filtra setores sem tickets para não poluir
+      return {
+        label: dept,
+        value: deptTickets.length,
+        color: this.getDepartmentColor(dept)
+      };
+    }).filter(item => item.value > 0); // Filtra setores sem tickets
 
     const total = data.reduce((sum, item) => sum + item.value, 0);
     if (total === 0) return;
     
-    const chartWidth = 400;
+    // ✅ CONFIGURAÇÕES DINÂMICAS
+    const pageWidth = doc.page.width - 100; // Largura útil da página (margens 50+50)
     const chartHeight = 200;
-    const x = 50;
+    const x = 50; // Margem esquerda
     const y = doc.y;
     
-    // Desenha o gráfico de barras
-    let currentX = x;
     const maxValue = Math.max(...data.map(item => item.value));
-    const barWidth = 80;
-    const spacing = 20;
+    const numberOfBars = data.length;
+    
+    // ✅ CALCULAR LARGURAS DINÂMICAS
+    const minBarWidth = 25; // Largura mínima para cada barra
+    const maxBarWidth = 60; // Largura máxima para cada barra
+    const minSpacing = 8; // Espaçamento mínimo entre barras
+    
+    // Calcula largura disponível para as barras
+    const availableWidth = pageWidth - (minSpacing * (numberOfBars - 1));
+    
+    // Calcula largura ideal das barras
+    let barWidth = Math.min(maxBarWidth, availableWidth / numberOfBars);
+    barWidth = Math.max(minBarWidth, barWidth); // Garante largura mínima
+    
+    // Calcula espaçamento real
+    let spacing = minSpacing;
+    const requiredWidth = (barWidth * numberOfBars) + (spacing * (numberOfBars - 1));
+    
+    // Se não couber, ajusta o espaçamento
+    if (requiredWidth > pageWidth) {
+      spacing = (pageWidth - (barWidth * numberOfBars)) / (numberOfBars - 1);
+    }
+    
+    console.log(`Gráfico: ${numberOfBars} setores, barWidth: ${barWidth}px, spacing: ${spacing}px`);
+    
+    // ✅ VERIFICAR SE PRECISA DE GRÁFICO VERTICAL (muitos setores)
+    if (numberOfBars > 10 || barWidth < 30) {
+      this.addVerticalBarChart(doc, data, x, y, pageWidth, chartHeight);
+      return;
+    }
+    
+    // ✅ DESENHAR GRÁFICO DE BARRAS HORIZONTAL
+    let currentX = x;
     
     data.forEach(item => {
-      const barHeight = item.value > 0 ? (item.value / maxValue) * (chartHeight - 40) : 5;
+      const barHeight = item.value > 0 ? (item.value / maxValue) * (chartHeight - 50) : 8;
       
+      // Desenha a barra
       doc.fillColor(item.color)
-          .rect(currentX, y + chartHeight - barHeight - 20, barWidth, barHeight)
+          .rect(currentX, y + chartHeight - barHeight - 30, barWidth, barHeight)
           .fill();
       
-      // Valor
+      // Valor no topo da barra
       doc.fillColor('#333333')
-          .fontSize(10)
-          .text(item.value.toString(), currentX, y + chartHeight - 15, {
+          .fontSize(7) // ✅ Fonte menor para valores
+          .text(item.value.toString(), currentX, y + chartHeight - barHeight - 35, {
             width: barWidth,
             align: 'center'
           });
       
-      // Label
-      doc.text(item.label, currentX, y + chartHeight, {
-        width: barWidth,
-        align: 'center'
-      });
+      // Label (nome do setor) - com quebra de linha automática
+      this.drawWrappedLabel(doc, item.label, currentX, y + chartHeight - 15, barWidth, barWidth);
       
       currentX += barWidth + spacing;
     });
@@ -280,6 +309,104 @@ export class ReportController {
     doc.moveDown(5);
   }
 
+  // ✅ MÉTODO AUXILIAR: Gráfico vertical para muitos setores
+  private addVerticalBarChart(doc: PDFKit.PDFDocument, data: any[], x: number, y: number, width: number, height: number) {
+    const maxValue = Math.max(...data.map(item => item.value));
+    const barHeight = 15;
+    const spacing = 5;
+    const labelWidth = 120;
+    const barWidth = width - labelWidth - 20;
+    
+    doc.fontSize(9)
+      .fillColor('#333333')
+      .text('Distribuição por Setor (Gráfico Vertical):', x, y)
+      .moveDown(1);
+    
+    let currentY = doc.y;
+    
+    data.forEach(item => {
+      const barLength = (item.value / maxValue) * barWidth;
+      const percentage = (item.value / data.reduce((sum, i) => sum + i.value, 0)) * 100;
+      
+      // Label do setor
+      doc.fillColor('#333333')
+          .text(this.truncateLabel(item.label, 18), x, currentY, {
+            width: labelWidth,
+            align: 'left'
+          });
+      
+      // Barra
+      doc.fillColor(item.color)
+          .rect(x + labelWidth + 5, currentY + 3, barLength, barHeight - 6)
+          .fill();
+      
+      // Valor e porcentagem
+      doc.fillColor('#333333')
+          .text(`${item.value} (${percentage.toFixed(1)}%)`, 
+                x + labelWidth + barLength + 10, currentY, {
+            width: 60,
+            align: 'left'
+          });
+      
+      currentY += barHeight + spacing;
+      
+      // Verifica se precisa de nova página
+      if (currentY > doc.page.height - 50 && data.indexOf(item) < data.length - 1) {
+        doc.addPage();
+        currentY = 50;
+      }
+    });
+    
+    doc.y = currentY + 10;
+  }
+
+  // ✅ MÉTODO AUXILIAR: Desenhar label com quebra de linha
+  private drawWrappedLabel(doc: PDFKit.PDFDocument, label: string, x: number, y: number, maxWidth: number, barWidth: number) {
+    const fontSize = 7;
+    const maxCharsPerLine = Math.floor(maxWidth / (fontSize * 0.6)); // Estimativa de caracteres por linha
+    
+    doc.fontSize(fontSize)
+      .fillColor('#333333');
+    
+    if (label.length <= maxCharsPerLine) {
+      // Label cabe em uma linha
+      doc.text(label, x, y, {
+        width: barWidth,
+        align: 'center'
+      });
+    } else {
+      // Quebra o label em múltiplas linhas
+      const words = label.split(' ');
+      let lines: string[] = [];
+      let currentLine = '';
+      
+      for (const word of words) {
+        if ((currentLine + ' ' + word).length <= maxCharsPerLine) {
+          currentLine = currentLine ? currentLine + ' ' + word : word;
+        } else {
+          if (currentLine) lines.push(currentLine);
+          currentLine = word;
+        }
+      }
+      if (currentLine) lines.push(currentLine);
+      
+      // Limita a 2 linhas para não ocupar muito espaço
+      const displayLines = lines.slice(0, 2);
+      
+      displayLines.forEach((line, index) => {
+        doc.text(line, x, y + (index * 9), {
+          width: barWidth,
+          align: 'center'
+        });
+      });
+    }
+  }
+
+  // ✅ MÉTODO AUXILIAR: Truncar label muito longo
+  private truncateLabel(label: string, maxLength: number): string {
+    if (label.length <= maxLength) return label;
+    return label.substring(0, maxLength - 3) + '...';
+  }
   private addStatusChart(doc: PDFKit.PDFDocument, resolved: number, inProgress: number, open: number, total: number) {
     if (total === 0) return;
     
@@ -401,21 +528,30 @@ export class ReportController {
       'Comercial': '#3498db',
       'Marketing': '#9b59b6',
       'Financeiro': '#e74c3c',
-      'Sem Setor': '#95a5a6' // Cor para tickets não classificados
+      'Infraestrutura': '#2ecc71',
+      'RH': '#e67e22',
+      'TI': '#34495e',
+      'Operações': '#1abc9c',
+      'Vendas': '#d35400',
+      'Atendimento': '#27ae60',
+      'Jurídico': '#8e44ad',
+      'Marketing - BR': '#9b59b6',
+      'Marketing - USA': '#8e44ad',
+      'Sem Setor': '#95a5a6'
     };
-    // Usa um hash simples para gerar cores consistentes para novos setores
+    
+    // Se o setor não está mapeado, gera uma cor única baseada no nome
     if (!colors[department]) {
-        let hash = 0;
-        for (let i = 0; i < department.length; i++) {
-            hash = department.charCodeAt(i) + ((hash << 5) - hash);
-        }
-        let color = '#';
-        for (let i = 0; i < 3; i++) {
-            const value = (hash >> (i * 8)) & 0xFF;
-            color += ('00' + value.toString(16)).substr(-2);
-        }
-        return color;
+      let hash = 0;
+      for (let i = 0; i < department.length; i++) {
+        hash = department.charCodeAt(i) + ((hash << 5) - hash);
+      }
+      
+      // Gera cores mais vibrantes
+      const hue = hash % 360;
+      return `hsl(${hue}, 70%, 50%)`;
     }
+    
     return colors[department];
   }
 
