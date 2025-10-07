@@ -1,5 +1,6 @@
+// dev/frontend/src/pages/Home/index.jsx (CORRIGIDO)
 import { useContext, useEffect, useState } from "react";
-import styles from "./Home.module.css"; // ✅ usando CSS module
+import styles from "./Home.module.css";
 import {
   Legend,
   Pie,
@@ -9,25 +10,26 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { Link } from "react-router-dom";
-import { FaCog, FaTrash } from "react-icons/fa";
+import { FaCog, FaTrash, FaComment, FaDownload } from "react-icons/fa";
 import { useBackend } from "../../context/BackendContext";
 
 function Home() {
   const [tickets, setTickets] = useState([]);
+  const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(true);
   const { backendUrl } = useBackend();
   
-  
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [newStatus, setNewStatus] = useState("");
+  const [comments, setComments] = useState([]);
+  const [newComment, setNewComment] = useState({ autor: "", conteudo: "" });
   
   const [currentPage, setCurrentPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState("all");
   const [departmentFilter, setDepartmentFilter] = useState("all");
   const [sortOrder, setSortOrder] = useState("desc");
   
-  const API_URL = backendUrl+'tickets';
-  console.log(API_URL, tickets);
+  const API_URL = backendUrl + 'tickets';
 
   const total = tickets.length;
   const openCount = tickets.filter((t) => t.status === "open").length;
@@ -43,30 +45,107 @@ function Home() {
   const COLORS = ["#36b37e", "#ffad00", "#de350b"];
 
   useEffect(() => {
-    const fetchTickets = async () => {
-      try {
-        const res = await fetch(API_URL);
-        const data = await res.json();
-        setTickets(data);
-      } catch (err) {
-        console.error(`ERROR[${err.message}]`);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchTickets();
+    fetchDepartments();
   }, []);
+
+  const fetchTickets = async () => {
+    try {
+      const res = await fetch(API_URL);
+      const data = await res.json();
+      setTickets(data);
+    } catch (err) {
+      console.error(`ERROR[${err.message}]`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchDepartments = async () => {
+    try {
+      const res = await fetch(`${API_URL}/departments`);
+      
+      // Verificar se a resposta é bem-sucedida
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+      
+      const data = await res.json();
+      
+      // CORREÇÃO: Garantir que departments seja sempre um array
+      if (Array.isArray(data)) {
+        setDepartments(data);
+      } else {
+        console.warn('Departments data is not an array:', data);
+        setDepartments([]); // Definir como array vazio se não for array
+      }
+    } catch (err) {
+      console.error(`ERROR fetching departments: ${err.message}`);
+      setDepartments([]); // Em caso de erro, definir como array vazio
+    }
+  };
+
+  const fetchComments = async (ticketId) => {
+    try {
+      const res = await fetch(`${API_URL}/${ticketId}/comments`);
+      const data = await res.json();
+      setComments(data);
+    } catch (err) {
+      console.error(`ERROR fetching comments: ${err.message}`);
+    }
+  };
+
+  const addComment = async () => {
+    if (!newComment.autor.trim() || !newComment.conteudo.trim()) {
+      alert("Por favor, preencha todos os campos do comentário");
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_URL}/${selectedTicket.id}/comments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newComment),
+      });
+
+      if (res.ok) {
+        setNewComment({ autor: "", conteudo: "" });
+        fetchComments(selectedTicket.id);
+      }
+    } catch (err) {
+      console.error(`ERROR adding comment: ${err.message}`);
+    }
+  };
+
+  const downloadPDF = async (ticketId) => {
+    try {
+      const res = await fetch(`${API_URL}/${ticketId}/pdf`);
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ticket-${ticketId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err) {
+      console.error(`ERROR downloading PDF: ${err.message}`);
+    }
+  };
 
   const visibleTickets = [...tickets].reverse().slice(0, 3);
 
   const handleOpenModal = (ticket) => {
     setSelectedTicket(ticket);
     setNewStatus(ticket.status);
+    fetchComments(ticket.id);
   };
 
   const handleCloseModal = () => {
     setSelectedTicket(null);
+    setComments([]);
+    setNewComment({ autor: "", conteudo: "" });
   };
 
   const handleOverlayClick = (e) => {
@@ -80,7 +159,6 @@ function Home() {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus }),
-        
       });
       setTickets((prev) =>
         prev.map((t) =>
@@ -116,10 +194,8 @@ function Home() {
   };
 
   let filteredTickets = tickets.filter((t) => {
-    const matchStatus =
-      statusFilter === "all" || t.status === statusFilter;
-    const matchDepartment =
-      departmentFilter === "all" || t.department === departmentFilter;
+    const matchStatus = statusFilter === "all" || t.status === statusFilter;
+    const matchDepartment = departmentFilter === "all" || t.department === departmentFilter;
     return matchStatus && matchDepartment;
   });
 
@@ -132,10 +208,7 @@ function Home() {
   const ticketsPerPage = 5;
   const totalPages = Math.ceil(sortedTickets.length / ticketsPerPage);
   const startIndex = (currentPage - 1) * ticketsPerPage;
-  const paginatedTickets = sortedTickets.slice(
-    startIndex,
-    startIndex + ticketsPerPage
-  );
+  const paginatedTickets = sortedTickets.slice(startIndex, startIndex + ticketsPerPage);
 
   const getVisiblePages = () => {
     const maxVisiblePages = 2;
@@ -147,10 +220,7 @@ function Home() {
     if (endPage - startPage + 1 < maxVisiblePages) {
       startPage = Math.max(1, endPage - maxVisiblePages + 1);
     }
-    return Array.from(
-      { length: endPage - startPage + 1 },
-      (_, i) => startPage + i
-    );
+    return Array.from({ length: endPage - startPage + 1 }, (_, i) => startPage + i);
   };
 
   const visiblePages = getVisiblePages();
@@ -192,10 +262,11 @@ function Home() {
             value={departmentFilter}
             onChange={(e) => setDepartmentFilter(e.target.value)}
           >
-            <option value="all">Todos</option>
-            <option value="Financeiro">Financeiro</option>
-            <option value="Marketing">Marketing</option>
-            <option value="Comercial">Comercial</option>
+            <option value="all">Todos os Departamentos</option>
+            {/* CORREÇÃO: Verificar se departments é array antes de usar map */}
+            {Array.isArray(departments) && departments.map((dept) => (
+              <option key={dept} value={dept}>{dept}</option>
+            ))}
           </select>
 
           <select
@@ -224,27 +295,56 @@ function Home() {
                     <div className={`${styles.ticketStatus} ${styles[`status-${ticket.status}`]}`}>
                       {STATUS[ticket.status]}
                     </div>
+                    {ticket.openedBy && (
+                      <div className={styles.ticketUser}>Por: {ticket.openedBy}</div>
+                    )}
                   </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      deleteTicket(ticket.id);
-                    }}
-                    style={{
-                      background: "transparent",
-                      border: "none",
-                      color: "#ff4d4f",
-                      cursor: "pointer",
-                    }}
-                    title="Excluir ticket"
-                  >
-                    <FaTrash style={{width: '1.5em', height:'1.5em'}}/>
-                  </button>
+                  <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        downloadPDF(ticket.id);
+                      }}
+                      style={{
+                        background: "transparent",
+                        border: "none",
+                        color: "#1890ff",
+                        cursor: "pointer",
+                      }}
+                      title="Baixar PDF"
+                    >
+                      <FaDownload style={{ width: '1.2em', height: '1.2em' }} />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteTicket(ticket.id);
+                      }}
+                      style={{
+                        background: "transparent",
+                        border: "none",
+                        color: "#ff4d4f",
+                        cursor: "pointer",
+                      }}
+                      title="Excluir ticket"
+                    >
+                      <FaTrash style={{ width: '1.2em', height: '1.2em' }} />
+                    </button>
+                  </div>
                 </div>
                 <div
                   className={styles.ticketDesc}
                   dangerouslySetInnerHTML={{ __html: ticket.description }}
                 ></div>
+                {ticket.imagePath && (
+                  <div className={styles.ticketImage}>
+                    <img 
+                      src={`${backendUrl.replace('/api/', '')}${ticket.imagePath}`} 
+                      alt="Anexo" 
+                      style={{ maxWidth: "100px", maxHeight: "100px", objectFit: "cover" }}
+                    />
+                  </div>
+                )}
               </li>
             ))}
           </ul>
@@ -324,7 +424,6 @@ function Home() {
           )}
         </div>
 
-        {/* ✅ Corrigido gráfico responsivo + fallback se não houver tickets */}
         <div className={styles.ticketsChart}>
           <h2>
             Status Geral:{" "}
@@ -366,17 +465,24 @@ function Home() {
 
       {selectedTicket && (
         <div className={styles.modalOverlay} onClick={handleOverlayClick}>
-          <div className={styles.modalContent}>
-            <h2>Editar Ticket #{selectedTicket.id}</h2>
-            <p>
-              <strong>{selectedTicket.title}</strong>
-            </p>
-            <p>
-              <strong>Setor:</strong> {selectedTicket.department}
-            </p>
-            <div
-              dangerouslySetInnerHTML={{ __html: selectedTicket.description }}
-            ></div>
+          <div className={styles.modalContent} style={{ maxWidth: "800px", width: "90%" }}>
+            <h2>Ticket #{selectedTicket.id} - {selectedTicket.title}</h2>
+            <p><strong>Setor:</strong> {selectedTicket.department}</p>
+            {selectedTicket.openedBy && (
+              <p><strong>Aberto por:</strong> {selectedTicket.openedBy}</p>
+            )}
+            <div dangerouslySetInnerHTML={{ __html: selectedTicket.description }}></div>
+
+            {selectedTicket.imagePath && (
+              <div style={{ margin: "15px 0" }}>
+                <strong>Imagem:</strong><br />
+                <img 
+                  src={`${backendUrl.replace('/api/', '')}${selectedTicket.imagePath}`} 
+                  alt="Anexo" 
+                  style={{ maxWidth: "100%", maxHeight: "300px", objectFit: "contain" }}
+                />
+              </div>
+            )}
 
             <label>Status:</label>
             <select
@@ -388,12 +494,70 @@ function Home() {
               <option value="closed">Fechado</option>
             </select>
 
+            {/* Seção de Comentários */}
+            <div className={styles.commentsSection}>
+              <h3 className={styles.commentsHeader}>
+                <FaComment /> Comentários ({comments.length})
+              </h3>
+              
+              <div className={styles.commentsList}>
+                {comments.length === 0 ? (
+                  <p className={styles.noComments}>Nenhum comentário ainda</p>
+                ) : (
+                  comments.map((comment) => (
+                    <div key={comment.id} className={styles.commentItem}>
+                      <div className={styles.commentHeader}>
+                        {comment.autor} - {new Date(comment.createdAt).toLocaleString('pt-BR')}
+                      </div>
+                      <div className={styles.commentContent}>{comment.conteudo}</div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              <div className={styles.commentForm}>
+                <input
+                  type="text"
+                  placeholder="Seu nome"
+                  value={newComment.autor}
+                  onChange={(e) => setNewComment(prev => ({ ...prev, autor: e.target.value }))}
+                  className={styles.commentInput}
+                />
+                <textarea
+                  placeholder="Digite seu comentário..."
+                  value={newComment.conteudo}
+                  onChange={(e) => setNewComment(prev => ({ ...prev, conteudo: e.target.value }))}
+                  rows="3"
+                  className={styles.commentTextarea}
+                />
+                <button 
+                  onClick={addComment}
+                  className={styles.btnAddComment}
+                >
+                  Adicionar Comentário
+                </button>
+              </div>
+            </div>
+
             <div style={{ display: "flex", gap: "10px", marginTop: "15px" }}>
               <button className={styles.btnSave} onClick={handleSaveStatus}>
-                Salvar
+                Salvar Status
+              </button>
+              <button 
+                onClick={() => downloadPDF(selectedTicket.id)}
+                style={{ 
+                  padding: "8px 16px", 
+                  backgroundColor: "#52c41a", 
+                  color: "white", 
+                  border: "none", 
+                  borderRadius: "4px",
+                  cursor: "pointer"
+                }}
+              >
+                <FaDownload /> Baixar PDF
               </button>
               <button className={styles.btnCancel} onClick={handleCloseModal}>
-                Cancelar
+                Fechar
               </button>
               <button
                 className={styles.btnCancel}

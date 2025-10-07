@@ -1,4 +1,5 @@
-import { IsDate, IsDateString, IsOptional, IsString } from 'class-validator';
+// dev/backend/src/tickets/dto/create-ticket.dto.ts (ATUALIZADO)
+import { IsDate, IsOptional, IsString } from 'class-validator';
 
 export class CreateTicketDto {
   @IsString()
@@ -13,7 +14,16 @@ export class CreateTicketDto {
   @IsOptional()
   department: string;
 
+  @IsString()
+  @IsOptional()
+  openedBy: string;
+
+  @IsString()
+  @IsOptional()
+  imagePath: string;
+
   @IsDate()
   @IsOptional()
   dueDate?: Date;
 }
+

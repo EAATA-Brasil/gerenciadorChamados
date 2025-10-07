@@ -2,40 +2,65 @@ import { Injectable, NotFoundException, BadRequestException } from "@nestjs/comm
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository, Between } from "typeorm";
 import { Ticket, TicketStatus } from "./ticket.entity";
+import { Comment } from "./comment.entity";
 import { CreateTicketDto } from "./dto/create-ticket.dto";
 import { UpdateTicketDto } from "./dto/update-ticket.dto";
 import { AppGateway } from "src/app.gateway";
+
+// Adicione esta declaração para resolver o erro do Multer
+declare global {
+  namespace Express {
+    interface Multer {
+      File: any;
+    }
+  }
+}
 
 @Injectable()
 export class TicketsService {
   constructor(
     @InjectRepository(Ticket)
     private readonly ticketRepository: Repository<Ticket>,
+    @InjectRepository(Comment)
+    private readonly commentRepository: Repository<Comment>,
     private readonly gateway: AppGateway
   ) {}
 
   async create(dto: CreateTicketDto): Promise<Ticket> {
-      // Correção: Criar a entidade corretamente
-      const ticket = new Ticket();
-      ticket.title = dto.title;
-      ticket.description = dto.description;
-      ticket.department = dto.department;
-      ticket.status = TicketStatus.OPEN;
-      ticket.dueDate = dto.dueDate ? new Date(dto.dueDate) : null;
-      ticket.closedAt = null;
-      ticket.createdAt = new Date();
-      ticket.updatedAt = new Date();
-      
-      this.gateway.notifyNewCall(ticket)
-      return await this.ticketRepository.save(ticket);
+    const ticket = new Ticket();
+    ticket.title = dto.title;
+    ticket.description = dto.description;
+    ticket.department = dto.department;
+    ticket.openedBy = dto.openedBy ?? null;
+    ticket.imagePath = dto.imagePath ?? null;
+    ticket.status = TicketStatus.OPEN;
+    ticket.dueDate = dto.dueDate ? new Date(dto.dueDate) : null;
+    ticket.closedAt = null;
+    ticket.createdAt = new Date();
+    ticket.updatedAt = new Date();
+    
+    this.gateway.notifyNewCall(ticket);
+    return await this.ticketRepository.save(ticket);
   }
 
   async findAll(): Promise<Ticket[]> {
-    return await this.ticketRepository.find();
+    return await this.ticketRepository.find({
+      relations: ['comments'],
+      order: { updatedAt: 'DESC' }
+    });
   }
 
+  // dev/backend/src/tickets/tickets.service.ts (CORRIGIDO)
   async findOne(id: number): Promise<Ticket> {
-    const ticket = await this.ticketRepository.findOne({ where: { id } });
+    // VALIDAÇÃO: Verificar se o ID é um número válido
+    if (isNaN(id) || id <= 0) {
+      throw new BadRequestException('ID inválido');
+    }
+
+    const ticket = await this.ticketRepository.findOne({ 
+      where: { id },
+      relations: ['comments']
+    });
     if (!ticket) throw new NotFoundException('Ticket Not Found');
     return ticket;
   }
@@ -45,6 +70,9 @@ export class TicketsService {
 
     if (dto.title) ticket.title = dto.title;
     if (dto.description) ticket.description = dto.description;
+    if (dto.department) ticket.department = dto.department;
+    if (dto.openedBy) ticket.openedBy = dto.openedBy;
+    if (dto.imagePath) ticket.imagePath = dto.imagePath;
     
     if (dto.status) {
       if (!Object.values(TicketStatus).includes(dto.status)) {
@@ -67,6 +95,19 @@ export class TicketsService {
     }
   }
 
+  // Novo método para buscar departamentos únicos
+  // dev/backend/src/tickets/tickets.service.ts (CORRIGIDO)
+  async getDepartments(): Promise<string[]> {
+    const result = await this.ticketRepository
+      .createQueryBuilder('ticket')
+      .select('DISTINCT(ticket.department)', 'department')
+      .where('ticket.department IS NOT NULL')
+      .andWhere('ticket.department != :empty', { empty: '' })
+      .getRawMany();
+    
+    return result.map(item => item.department).sort();
+  }
+
   async getTicketsForReport(startDate: Date, endDate: Date): Promise<Ticket[]> {
     const start = new Date(startDate);
     start.setHours(0, 0, 0, 0);
@@ -77,7 +118,8 @@ export class TicketsService {
     return await this.ticketRepository.find({
       where: {
         createdAt: Between(start, end)
-      }
+      },
+      relations: ['comments']
     });
   }
 
@@ -99,3 +141,4 @@ export class TicketsService {
     return Math.floor(diff / (1000 * 60 * 60 * 24));
   }
 }
+

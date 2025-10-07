@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Image from "@tiptap/extension-image";
@@ -9,9 +9,10 @@ import styles from "./CreateTicket.module.css";
 import { useBackend } from "../../context/BackendContext";
 
 function CreateTicket() {
+  const navigate = useNavigate();
   const [department, setDepartment] = useState("");
-  const [sectors, setSectors] = useState([]); // ✅ Estado para armazenar os setores
   const [title, setTitle] = useState("");
+  const [openedBy, setOpenedBy] = useState("");
   const [description, setDescription] = useState("");
   const [status] = useState("open");
   const [message, setMessage] = useState("");
@@ -20,34 +21,35 @@ function CreateTicket() {
   const [uploadedImages, setUploadedImages] = useState([]);
   const [uploadedPdfs, setUploadedPdfs] = useState([]);
   const [serverImageUrls, setServerImageUrls] = useState([]);
+  const [departments, setDepartments] = useState([]);
 
   const { backendUrl } = useBackend();
 
   const API_URL = backendUrl + 'tickets';
-  const SECTORS_API_URL = backendUrl + 'sectors'; // ✅ URL da API de setores
+  const DEPARTMENTS_API_URL = backendUrl + 'tickets/departments';
 
   // Refs para os inputs de arquivo
   const imageInputRef = useRef(null);
   const pdfInputRef = useRef(null);
 
-  // ✅ Função para buscar os setores do backend
-  const fetchSectors = async () => {
+  // ✅ Função para buscar os departamentos do backend
+  const fetchDepartments = async () => {
     try {
-      const res = await fetch(SECTORS_API_URL);
+      const res = await fetch(DEPARTMENTS_API_URL);
       if (!res.ok) {
-        throw new Error("Erro ao buscar setores do backend.");
+        throw new Error("Erro ao buscar departamentos do backend.");
       }
       const data = await res.json();
-      setSectors(data);
+      setDepartments(Array.isArray(data) ? data : []);
     } catch (error) {
-      console.error("Erro de rede ou ao buscar setores:", error);
-      setMessage("❌ Não foi possível carregar os setores.");
+      console.error("Erro de rede ou ao buscar departamentos:", error);
+      setMessage("❌ Não foi possível carregar os departamentos.");
     }
   };
 
-  // ✅ Chama a função de busca de setores quando o componente é montado
+  // ✅ Chama a função de busca de departamentos quando o componente é montado
   useEffect(() => {
-    fetchSectors();
+    fetchDepartments();
   }, []);
 
   const handleLocalImage = (editor, file) => {
@@ -137,6 +139,22 @@ function CreateTicket() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Validações
+    if (!title.trim()) {
+      alert("Por favor, preencha o título do ticket");
+      return;
+    }
+
+    if (!department) {
+      alert("Por favor, selecione um departamento");
+      return;
+    }
+
+    if (!description.trim() || description === "<p></p>") {
+      alert("Por favor, descreva o problema ou solicitação");
+      return;
+    }
+
     let currentImageUrlsInEditor = [];
     editor.state.doc.descendants((node) => {
       if (node.type.name === "image" && node.attrs.src) {
@@ -211,10 +229,11 @@ function CreateTicket() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          title: title.trim(),
           department,
-          title,
           description: finalDescription,
           status,
+          openedBy: openedBy.trim() || null
         }),
       });
 
@@ -222,97 +241,143 @@ function CreateTicket() {
 
       const data = await res.json();
       setMessage(`✅ Ticket criado com sucesso! ID: ${data.id}`);
+      
+      // Limpa o formulário
       setDepartment("");
       setTitle("");
+      setOpenedBy("");
       setDescription("");
       setUploadedImages([]);
-      setUploadedPdfs([]); // Limpa a lista de PDFs
+      setUploadedPdfs([]);
       setServerImageUrls(newServerImageUrls);
       editor.commands.clearContent();
+      
+      // Redireciona para home após 2 segundos
+      setTimeout(() => {
+        navigate("/");
+      }, 2000);
     } catch (err) {
       setMessage(`❌ ERRO: ${err.message}`);
     }
   };
 
   return (
-    <div className={styles.createTicketContainer}>
+    <div className={styles.container}>
       <div className={styles.header}>
         <h1>Criar Novo Ticket</h1>
-        <span style={{ display: "flex", gap: 20 }}>
-          <Link to="/">
-            <button className={styles.btnCreate}>Home</button>
-          </Link>
-        </span>
+        <button 
+          onClick={() => navigate("/")}
+          className={styles.backButton}
+        >
+          ← Voltar para Home
+        </button>
       </div>
 
-      <form className={styles.createTicketForm} onSubmit={handleSubmit}>
-        <label>Categoria</label>
-        <select
-          value={department}
-          onChange={(e) => setDepartment(e.target.value)}
-          required
-        >
-          <option value="" disabled>
-            Selecione seu setor
-          </option>
-          {/* ✅ Renderiza dinamicamente as opções com base no estado 'sectors' */}
-          {sectors.map((sector) => (
-            <option key={sector.id} value={sector.name}>
-              {sector.name}
-            </option>
-          ))}
-        </select>
-
-        <label>Título</label>
-        <input
-          type="text"
-          placeholder="Título do ticket"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          required
-        />
-
-        <label>Descrição detalhada</label>
-        <div className={styles.editorToolbar}>
-          <button
-            type="button"
-            onClick={() => editor?.chain().focus().toggleBold().run()}
-          >
-            <b>B</b>
-          </button>
-          <button
-            type="button"
-            onClick={() => editor?.chain().focus().toggleBulletList().run()}
-          >
-            • Lista
-          </button>
-          <button type="button" onClick={triggerImageSelect}>
-            🖼️ Upload de imagem
-          </button>
-          <button type="button" onClick={triggerPdfSelect}>
-            📄 Upload de PDF
-          </button>
+      <form onSubmit={handleSubmit} className={styles.form}>
+        {/* TÍTULO */}
+        <div className={styles.formGroup}>
+          <label htmlFor="title">Título do Ticket *</label>
           <input
-            type="file"
-            accept="image/*"
-            ref={imageInputRef}
-            onChange={handleImageChange}
-            style={{ display: "none" }}
-          />
-          <input
-            type="file"
-            accept="application/pdf"
-            ref={pdfInputRef}
-            onChange={handlePdfChange}
-            style={{ display: "none" }}
+            type="text"
+            id="title"
+            placeholder="Título do ticket"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            required
           />
         </div>
 
-        <div
-          className={styles.editorWrapper}
-          onClick={() => editor?.commands.focus()}
-        >
-          <EditorContent editor={editor} />
+        {/* DEPARTAMENTO E ABERTO POR */}
+        <div className={styles.formRow}>
+          <div className={styles.formGroup}>
+            <label htmlFor="department">Departamento *</label>
+            <select
+              id="department"
+              value={department}
+              onChange={(e) => setDepartment(e.target.value)}
+              required
+            >
+              <option value="">Selecione um departamento</option>
+              {departments.map((dept) => (
+                <option key={dept} value={dept}>
+                  {dept}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className={styles.formGroup}>
+            <label htmlFor="openedBy">Aberto por</label>
+            <input
+              type="text"
+              id="openedBy"
+              placeholder="Nome de quem está abrindo o ticket"
+              value={openedBy}
+              onChange={(e) => setOpenedBy(e.target.value)}
+            />
+          </div>
+        </div>
+
+        {/* DESCRIÇÃO COM EDITOR */}
+        <div className={styles.formGroup}>
+          <label>Descrição Detalhada *</label>
+          <div className={styles.editorToolbar}>
+            <button
+              type="button"
+              onClick={() => editor?.chain().focus().toggleBold().run()}
+              className={editor?.isActive('bold') ? styles.active : ''}
+            >
+              <b>B</b>
+            </button>
+            <button
+              type="button"
+              onClick={() => editor?.chain().focus().toggleItalic().run()}
+              className={editor?.isActive('italic') ? styles.active : ''}
+            >
+              <i>I</i>
+            </button>
+            <button
+              type="button"
+              onClick={() => editor?.chain().focus().toggleBulletList().run()}
+              className={editor?.isActive('bulletList') ? styles.active : ''}
+            >
+              • Lista
+            </button>
+            <button
+              type="button"
+              onClick={() => editor?.chain().focus().toggleOrderedList().run()}
+              className={editor?.isActive('orderedList') ? styles.active : ''}
+            >
+              1. Lista Num
+            </button>
+            <button type="button" onClick={triggerImageSelect}>
+              🖼️ Imagem
+            </button>
+            <button type="button" onClick={triggerPdfSelect}>
+              📄 PDF
+            </button>
+            <input
+              type="file"
+              accept="image/*"
+              ref={imageInputRef}
+              onChange={handleImageChange}
+              style={{ display: "none" }}
+            />
+            <input
+              type="file"
+              accept="application/pdf"
+              ref={pdfInputRef}
+              onChange={handlePdfChange}
+              style={{ display: "none" }}
+            />
+          </div>
+
+          <div
+            className={styles.editorWrapper}
+            onClick={() => editor?.commands.focus()}
+          >
+            <EditorContent editor={editor} />
+          </div>
         </div>
 
         {/* Lista de PDFs anexados */}
@@ -332,9 +397,18 @@ function CreateTicket() {
           </div>
         )}
 
-        <button type="submit" className={styles.btnSave}>
-          Criar Ticket
-        </button>
+        <div className={styles.formActions}>
+          <button 
+            type="button" 
+            onClick={() => navigate("/")}
+            className={styles.cancelButton}
+          >
+            Cancelar
+          </button>
+          <button type="submit" className={styles.submitButton}>
+            Criar Ticket
+          </button>
+        </div>
       </form>
 
       {message && <p className={styles.createTicketMessage}>{message}</p>}

@@ -1,115 +1,228 @@
-.createTicketContainer {
+/* dev/frontend/src/pages/CreateTicket/CreateTicket.module.css (ATUALIZADO) */
+.container {
   padding: 2rem;
   background: var(--bg);
   color: var(--text);
   min-height: 100vh;
 }
 
-.createTicketForm {
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.header h1 {
+  color: var(--text);
+  margin: 0;
+}
+
+.backButton {
+  background: #6c757d;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background 0.2s;
+}
+
+.backButton:hover {
+  background: #5a6268;
+}
+
+.form {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.5rem;
   background: var(--bg-card);
-  padding: 1.5rem;
+  padding: 2rem;
   border-radius: 8px;
-  max-width: 700px;
+  max-width: 800px;
   margin: 0 auto;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
-.createTicketForm label {
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.formGroup label {
   font-weight: bold;
   color: var(--accent);
+  font-size: 0.9rem;
 }
 
-.createTicketForm select,
-.createTicketForm input {
+.formGroup input,
+.formGroup select,
+.formGroup textarea {
   background: #2a2a2a;
   color: var(--text);
   border: 1px solid var(--border);
-  padding: 10px;
+  padding: 12px;
   border-radius: 6px;
+  font-size: 1rem;
+  transition: border-color 0.2s;
 }
 
+.formGroup input:focus,
+.formGroup select:focus,
+.formGroup textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.formRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+/* Editor de Texto - FUNDO CINZA VISÍVEL */
+.editorContainer {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  background: #2a2a2a !important; /* FUNDO CINZA ESCURO */
+}
+
+.editorWrapper {
+  background: #2a2a2a !important; /* FUNDO CINZA ESCURO */
+  min-height: 200px;
+  border-radius: 0 0 6px 6px;
+  padding: 1rem;
+  color: var(--text);
+}
+
+/* Conteúdo do editor visível */
+.editorContent {
+  background: #2a2a2a;
+  color: white !important;
+  min-height: 150px;
+  padding: 10px;
+  border-radius: 4px;
+}
+
+/* Barra de ferramentas do editor */
 .editorToolbar {
   display: flex;
-  gap: 10px;
-  margin-bottom: 10px;
+  gap: 5px;
+  padding: 10px;
+  background: #3a3a3a;
+  border-bottom: 1px solid var(--border);
+  border-radius: 6px 6px 0 0;
 }
 
 .editorToolbar button {
   background: #2a2a2a;
   color: var(--text);
   border: 1px solid var(--border);
-  padding: 6px 12px;
+  padding: 8px 12px;
   border-radius: 4px;
   cursor: pointer;
-  transition: 0.2s;
+  transition: background 0.2s;
+  font-size: 0.9rem;
 }
 
 .editorToolbar button:hover {
-  background: #3a3a3a;
+  background: #4a4a4a;
 }
 
+.editorToolbar button.active {
+  background: var(--accent);
+  color: white;
+}
+
+/* Estilos para o conteúdo do TipTap */
 .editorWrapper {
+  background: #2a2a2a !important;
+  color: white !important;
+  padding: 1rem;
+  border-radius: 4px;
   min-height: 150px;
-  background: #1e1e1e;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 10px;
-  cursor: text;
+  outline: none;
 }
 
-.editorWrapper img{
-  width: 100%;
+
+.editorWrapper p {
+  margin: 0 0 1em 0;
+  color: white !important;
 }
 
-.createTicketMessage {
-  text-align: center;
+.editorWrapper ul, .editorWrapper ol {
+  padding-left: 1.5rem;
+  color: white !important;
+}
+
+.editorWrapper li {
+  color: white !important;
+}
+
+.editorWrapper img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 4px;
+}
+
+.editorWrapper a {
+  color: #1890ff;
+  text-decoration: underline;
+}
+
+/* Upload de Imagem */
+.fileInput {
+  padding: 8px !important;
+}
+
+.imagePreview {
   margin-top: 1rem;
-  font-weight: bold;
+  text-align: center;
 }
 
-.btnSave {
-  background: var(--accent);
-  color: #fff;
-  padding: 12px;
-  font-weight: bold;
-  border: none;
+.imagePreview img {
+  max-width: 300px;
+  max-height: 300px;
   border-radius: 6px;
-  cursor: pointer;
-  transition: opacity 0.2s;
+  border: 2px solid var(--border);
 }
 
-.btnSave:hover {
-  opacity: 0.9;
-}
-
-/* Reutilizando estilo do header */
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-}
-
-.btnCreate {
-  background: var(--accent);
-  color: var(--bg-card);
-  padding: 10px 16px;
-  font-weight: bold;
+.removeImageBtn {
+  background: #dc3545;
+  color: white;
   border: none;
-  border-radius: 6px;
+  padding: 8px 16px;
+  border-radius: 4px;
   cursor: pointer;
-  transition: opacity 0.2s;
+  margin-top: 10px;
+  font-weight: bold;
+  transition: background 0.2s;
 }
 
-.btnCreate:hover {
-  opacity: 0.9;
+.removeImageBtn:hover {
+  background: #c82333;
 }
+
+.fileHint {
+  color: #6c757d;
+  font-size: 0.8rem;
+  margin-top: 0.5rem;
+  display: block;
+}
+
+/* Lista de PDFs */
 .pdfList {
   margin-top: 15px;
   padding: 10px;
   border-radius: 4px;
+  background: #2a2a2a;
+  border: 1px solid var(--border);
 }
 
 .pdfList ul {
@@ -119,14 +232,13 @@
 }
 
 .pdfList li {
-  background: #2a2a2a;
+  background: #3a3a3a;
   color: var(--text);
   border: 1px solid var(--border);
-
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 5px;
+  padding: 8px;
   border-radius: 3px;
   margin-bottom: 5px;
 }
@@ -140,15 +252,103 @@
   padding: 0 5px;
 }
 
+/* Ações do Formulário */
+.formActions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.cancelButton {
+  background: #6c757d;
+  color: white;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background 0.2s;
+}
+
+.cancelButton:hover {
+  background: #5a6268;
+}
+
+.submitButton {
+  background: var(--accent);
+  color: white;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: opacity 0.2s;
+}
+
+.submitButton:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.submitButton:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.createTicketMessage {
+  text-align: center;
+  margin-top: 1rem;
+  font-weight: bold;
+  padding: 10px;
+  border-radius: 4px;
+}
+
 /* Responsivo */
 @media (max-width: 768px) {
-  .createTicketForm {
+  .container {
     padding: 1rem;
   }
 
+  .header {
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+  }
+
+  .form {
+    padding: 1.5rem;
+  }
+
+  .formRow {
+    grid-template-columns: 1fr;
+  }
+
+  .formActions {
+    flex-direction: column;
+  }
+
+  .imagePreview img {
+    max-width: 100%;
+  }
+
   .editorWrapper {
-    min-height: 120px;
+    min-height: 150px;
+  }
+
+  .editorToolbar {
+    flex-wrap: wrap;
   }
 }
 
-
+@media (max-width: 480px) {
+  .form {
+    padding: 1rem;
+  }
+  
+  .header h1 {
+    font-size: 1.5rem;
+  }
+}

@@ -1,4 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from "typeorm";
+// dev/backend/src/tickets/ticket.entity.ts (ATUALIZADO)
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from "typeorm";
+import { Comment } from "./comment.entity";
 
 export enum TicketStatus {
   OPEN = "open",
@@ -27,17 +29,29 @@ export class Ticket {
   })
   status: TicketStatus;
 
-   @Column({ type: "text", nullable: true })
+  @Column({ type: "text", nullable: true })
   dueDate: Date | null;
 
   @Column({ type: "text", nullable: true })
   closedAt: Date | null;
+
+  // Novo campo para imagem
+  @Column({ type: "text", nullable: true })
+  imagePath: string | null;
+
+  // Novo campo para usuário que abriu o chamado
+  @Column({ nullable: true })
+  openedBy: string;
 
   @CreateDateColumn({ type: "text" })
   createdAt: Date;
 
   @UpdateDateColumn({ type: "text" })
   updatedAt: Date;
+
+  // Relacionamento com comentários
+  @OneToMany(() => Comment, comment => comment.ticket, { cascade: true })
+  comments: Comment[];
 
   // Método para verificar se está atrasado
   isOverdue(): boolean {
@@ -56,3 +70,4 @@ export class Ticket {
     return Math.floor(diff / (1000 * 60 * 60 * 24));
   }
 }
+

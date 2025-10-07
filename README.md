@@ -240,9 +240,13 @@ Quando o app está rodando, ele fica na bandeja do sistema.
 
 ## ✅ Tecnologias
 Electron → Shell desktop
+
 NestJS → Backend
+
 React (Vite) → Frontend
+
 Socket.IO → Notificações em tempo real
+
 Node.js child_process.spawn → Controle do backend
 
 ---
@@ -283,21 +287,14 @@ sequenceDiagram
 ---
 
 
-
-
-## ⚠️ IMPORTANTE
-Esta versão NÃO suporta backend externo.
-
-Sempre roda o backend localmente.
-
 ## 🆕 Atualizações futuras
 
 |  Feito   | Atualizações                                                |
 |----------|-------------------------------------------------------------|
-| &#x2610; | Aceitar backend externo                                     |
-| &#x2610; | Modificar departamentos através do configs                  |
+| &#x2611; | Aceitar backend externo                                     |
+| &#x2611; | Modificar departamentos através do configs                  |
 | &#x2610; | Separar abas no configs para configurações de front e back  |
-| &#x2610; | Ligar/desligar notificações para computadores específicos   |
+| &#x2611; | Ligar/desligar notificações para computadores específicos   |
 | &#x2610; | Adaptar para docker                                         |
 | &#x2610; | Escrever a documentação completa                            |
 | &#x2610; | Configurar testes                                           |

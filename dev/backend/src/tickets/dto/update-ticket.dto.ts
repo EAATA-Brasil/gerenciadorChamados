@@ -17,4 +17,16 @@ export class UpdateTicketDto {
     @IsDateString()
     @IsOptional()
     dueDate?: string;
+    
+    @IsString()
+    @IsOptional()
+    openedBy?: string;
+
+    @IsString()
+    @IsOptional()
+    imagePath?: string;
+
+    @IsString()
+    @IsOptional()
+    department?: string;
 }
