@@ -64,7 +64,8 @@ export class TicketsController {
         const commentData = {
             ticketId: +ticketId,
             autor: createCommentDto.autor,
-            conteudo: createCommentDto.conteudo
+            conteudo: createCommentDto.conteudo,
+            imageUrl: createCommentDto.imageUrl
         };
         
         return this.commentsService.create(commentData);
