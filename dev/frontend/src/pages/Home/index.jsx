@@ -1,5 +1,5 @@
 // dev/frontend/src/pages/Home/index.jsx (CORRIGIDO)
-import { useContext, useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import styles from "./Home.module.css";
 import {
   Legend,
@@ -23,6 +23,10 @@ function Home() {
   const [newStatus, setNewStatus] = useState("");
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState({ autor: "", conteudo: "" });
+  const [commentFile, setCommentFile] = useState(null);
+  const [commentFilePreview, setCommentFilePreview] = useState(null);
+  const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+  const commentFileInputRef = useRef(null);
   
   const [currentPage, setCurrentPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState("all");
@@ -96,24 +100,81 @@ function Home() {
   };
 
   const addComment = async () => {
-    if (!newComment.autor.trim() || !newComment.conteudo.trim()) {
-      alert("Por favor, preencha todos os campos do comentário");
+    if (!newComment.autor.trim()) {
+      alert("Por favor, informe o autor do comentário");
+      return;
+    }
+
+    if (!newComment.conteudo.trim() && !commentFile) {
+      alert("Digite um comentário ou anexe um arquivo");
       return;
     }
 
     try {
+      setIsSubmittingComment(true);
+
+      let attachmentUrl;
+      if (commentFile) {
+        const formData = new FormData();
+        formData.append("file", commentFile);
+
+        const uploadRes = await fetch(`${backendUrl}upload/file`, {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!uploadRes.ok) {
+          throw new Error("Falha ao enviar arquivo do comentário");
+        }
+
+        const uploadData = await uploadRes.json();
+        attachmentUrl = uploadData.url;
+      }
+
       const res = await fetch(`${API_URL}/${selectedTicket.id}/comments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newComment),
+        body: JSON.stringify({ ...newComment, attachmentUrl }),
       });
 
       if (res.ok) {
         setNewComment({ autor: "", conteudo: "" });
+        setCommentFile(null);
+        setCommentFilePreview(null);
+        if (commentFileInputRef.current) {
+          commentFileInputRef.current.value = "";
+        }
         fetchComments(selectedTicket.id);
       }
     } catch (err) {
       console.error(`ERROR adding comment: ${err.message}`);
+    } finally {
+      setIsSubmittingComment(false);
+    }
+  };
+
+  const handleCommentFileChange = (event) => {
+    const file = event.target.files?.[0];
+
+    if (file) {
+      setCommentFile(file);
+      if (file.type.startsWith("image/")) {
+        setCommentFilePreview(URL.createObjectURL(file));
+      } else {
+        setCommentFilePreview(null);
+      }
+    } else {
+      setCommentFile(null);
+      setCommentFilePreview(null);
+    }
+  };
+
+  const removeCommentFile = () => {
+    setCommentFile(null);
+    setCommentFilePreview(null);
+
+    if (commentFileInputRef.current) {
+      commentFileInputRef.current.value = "";
     }
   };
 
@@ -140,12 +201,16 @@ function Home() {
     setSelectedTicket(ticket);
     setNewStatus(ticket.status);
     fetchComments(ticket.id);
+    setNewComment({ autor: "", conteudo: "" });
+    removeCommentFile();
   };
 
   const handleCloseModal = () => {
     setSelectedTicket(null);
     setComments([]);
     setNewComment({ autor: "", conteudo: "" });
+    setCommentImage(null);
+    setCommentImagePreview(null);
   };
 
   const handleOverlayClick = (e) => {
@@ -509,7 +574,27 @@ function Home() {
                       <div className={styles.commentHeader}>
                         {comment.autor} - {new Date(comment.createdAt).toLocaleString('pt-BR')}
                       </div>
-                      <div className={styles.commentContent}>{comment.conteudo}</div>
+                      {comment.conteudo && (
+                        <div className={styles.commentContent}>{comment.conteudo}</div>
+                      )}
+                      {comment.attachmentUrl && (
+                        comment.attachmentUrl.match(/\.(png|jpe?g|gif|webp)$/i) ? (
+                          <img
+                            src={comment.attachmentUrl}
+                            alt="Imagem do comentário"
+                            className={styles.commentImage}
+                          />
+                        ) : (
+                          <a
+                            href={comment.attachmentUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={styles.commentFileLink}
+                          >
+                            📎 Ver anexo
+                          </a>
+                        )
+                      )}
                     </div>
                   ))
                 )}
@@ -530,11 +615,35 @@ function Home() {
                   rows="3"
                   className={styles.commentTextarea}
                 />
-                <button 
+                <label className={styles.commentFileLabel}>
+                  <input
+                    type="file"
+                    accept="*/*"
+                  ref={commentFileInputRef}
+                  onChange={handleCommentFileChange}
+                  className={styles.commentFileInput}
+                  />
+                  {commentFile ? "Arquivo selecionado" : "Anexar arquivo"}
+                </label>
+                {commentFile && (
+                  <div className={styles.commentImagePreview}>
+                    {commentFilePreview ? (
+                      <img src={commentFilePreview} alt="Pré-visualização do comentário" />
+                    ) : (
+                      <span>{commentFile?.name}</span>
+                    )}
+                    <button type="button" onClick={removeCommentFile} className={styles.removeCommentImageBtn}>
+                      Remover anexo
+                    </button>
+                  </div>
+                )}
+                <button
+                  type="button"
                   onClick={addComment}
                   className={styles.btnAddComment}
+                  disabled={isSubmittingComment}
                 >
-                  Adicionar Comentário
+                  {isSubmittingComment ? "Enviando..." : "Adicionar Comentário"}
                 </button>
               </div>
             </div>
