@@ -334,6 +334,56 @@
   color: #888;
 }
 
+.commentFileLabel {
+  background: #2a2a2a;
+  color: var(--text);
+  border: 1px dashed var(--border);
+  padding: 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  text-align: center;
+}
+
+.commentFileInput {
+  display: none;
+}
+
+.commentImagePreview {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  padding: 8px;
+  border-radius: 4px;
+}
+
+.commentImagePreview img {
+  max-width: 120px;
+  border-radius: 4px;
+  object-fit: contain;
+}
+
+.removeCommentImageBtn {
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.removeCommentImageBtn:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.commentImage {
+  max-width: 100%;
+  border-radius: 4px;
+  margin-top: 8px;
+  border: 1px solid var(--border);
+}
+
 .btnAddComment {
   background: var(--accent);
   color: var(--bg-card);

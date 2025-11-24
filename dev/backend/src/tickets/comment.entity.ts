@@ -16,6 +16,9 @@ export class Comment {
   @Column("text")
   conteudo: string;
 
+  @Column({ type: "text", nullable: true })
+  imageUrl?: string | null;
+
   @CreateDateColumn({ type: "text" })
   createdAt: Date;
 
