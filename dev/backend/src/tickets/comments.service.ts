@@ -28,7 +28,7 @@ export class CommentsService {
     comment.ticketId = dto.ticketId;
     comment.autor = dto.autor;
     comment.conteudo = dto.conteudo?.trim() ?? '';
-    comment.imageUrl = dto.imageUrl ?? null;
+    comment.imageUrl = dto.imageUrl;
     comment.createdAt = new Date();
     
     return await this.commentRepository.save(comment);
@@ -55,7 +55,7 @@ export class CommentsService {
     }
 
     if (dto.imageUrl !== undefined) {
-      comment.imageUrl = dto.imageUrl ?? null;
+      comment.imageUrl = dto.imageUrl;
     }
 
     if (!comment.conteudo?.trim() && !comment.imageUrl) {
