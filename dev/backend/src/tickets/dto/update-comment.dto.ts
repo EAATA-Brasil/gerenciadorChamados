@@ -8,6 +8,6 @@ export class UpdateCommentDto {
 
   @IsString()
   @IsOptional()
-  attachmentUrl?: string | null;
+  imageUrl?: string;
 }
 

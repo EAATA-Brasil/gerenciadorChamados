@@ -23,17 +23,10 @@ function Home() {
   const [newStatus, setNewStatus] = useState("");
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState({ autor: "", conteudo: "" });
-  const [commentFile, setCommentFile] = useState(null);
-  const [commentFilePreview, setCommentFilePreview] = useState(null);
-  const [imageContextMenu, setImageContextMenu] = useState({
-    visible: false,
-    x: 0,
-    y: 0,
-    src: "",
-  });
+  const [commentImage, setCommentImage] = useState(null);
+  const [commentImagePreview, setCommentImagePreview] = useState(null);
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
-  const commentFileInputRef = useRef(null);
-  const descriptionRef = useRef(null);
+  const commentImageInputRef = useRef(null);
   
   const [currentPage, setCurrentPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState("all");
@@ -112,44 +105,44 @@ function Home() {
       return;
     }
 
-    if (!newComment.conteudo.trim() && !commentFile) {
-      alert("Digite um comentário ou anexe um arquivo");
+    if (!newComment.conteudo.trim() && !commentImage) {
+      alert("Digite um comentário ou anexe uma imagem");
       return;
     }
 
     try {
       setIsSubmittingComment(true);
 
-      let attachmentUrl;
-      if (commentFile) {
+      let imageUrl;
+      if (commentImage) {
         const formData = new FormData();
-        formData.append("file", commentFile);
+        formData.append("file", commentImage);
 
-        const uploadRes = await fetch(`${backendUrl}upload/file`, {
+        const uploadRes = await fetch(`${backendUrl}upload/image`, {
           method: "POST",
           body: formData,
         });
 
         if (!uploadRes.ok) {
-          throw new Error("Falha ao enviar arquivo do comentário");
+          throw new Error("Falha ao enviar imagem do comentário");
         }
 
         const uploadData = await uploadRes.json();
-        attachmentUrl = uploadData.url;
+        imageUrl = uploadData.url;
       }
 
       const res = await fetch(`${API_URL}/${selectedTicket.id}/comments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...newComment, attachmentUrl }),
+        body: JSON.stringify({ ...newComment, imageUrl }),
       });
 
       if (res.ok) {
         setNewComment({ autor: "", conteudo: "" });
-        setCommentFile(null);
-        setCommentFilePreview(null);
-        if (commentFileInputRef.current) {
-          commentFileInputRef.current.value = "";
+        setCommentImage(null);
+        setCommentImagePreview(null);
+        if (commentImageInputRef.current) {
+          commentImageInputRef.current.value = "";
         }
         fetchComments(selectedTicket.id);
       }
@@ -160,28 +153,24 @@ function Home() {
     }
   };
 
-  const handleCommentFileChange = (event) => {
+  const handleCommentImageChange = (event) => {
     const file = event.target.files?.[0];
 
-    if (file) {
-      setCommentFile(file);
-      if (file.type.startsWith("image/")) {
-        setCommentFilePreview(URL.createObjectURL(file));
-      } else {
-        setCommentFilePreview(null);
-      }
+    if (file && file.type.startsWith("image/")) {
+      setCommentImage(file);
+      setCommentImagePreview(URL.createObjectURL(file));
     } else {
-      setCommentFile(null);
-      setCommentFilePreview(null);
+      setCommentImage(null);
+      setCommentImagePreview(null);
     }
   };
 
-  const removeCommentFile = () => {
-    setCommentFile(null);
-    setCommentFilePreview(null);
+  const removeCommentImage = () => {
+    setCommentImage(null);
+    setCommentImagePreview(null);
 
-    if (commentFileInputRef.current) {
-      commentFileInputRef.current.value = "";
+    if (commentImageInputRef.current) {
+      commentImageInputRef.current.value = "";
     }
   };
 
@@ -209,15 +198,15 @@ function Home() {
     setNewStatus(ticket.status);
     fetchComments(ticket.id);
     setNewComment({ autor: "", conteudo: "" });
-    removeCommentFile();
+    removeCommentImage();
   };
 
   const handleCloseModal = () => {
     setSelectedTicket(null);
     setComments([]);
     setNewComment({ autor: "", conteudo: "" });
-    removeCommentFile();
-    setImageContextMenu({ visible: false, x: 0, y: 0, src: "" });
+    setCommentImage(null);
+    setCommentImagePreview(null);
   };
 
   const handleOverlayClick = (e) => {
@@ -324,16 +313,16 @@ function Home() {
       const target = event.target;
       if (target instanceof HTMLImageElement) {
         event.preventDefault();
-          setImageContextMenu({
-            visible: true,
-            x: event.clientX,
-            y: event.clientY,
-            src: target.src,
-          });
-        } else {
-          setImageContextMenu((prev) => ({ ...prev, visible: false }));
-        }
-      };
+        setImageContextMenu({
+          visible: true,
+          x: event.clientX,
+          y: event.clientY,
+          src: target.src,
+        });
+      } else {
+        setImageContextMenu((prev) => ({ ...prev, visible: false }));
+      }
+    };
 
     const handleClick = () => {
       setImageContextMenu((prev) => ({ ...prev, visible: false }));
@@ -670,23 +659,12 @@ function Home() {
                       {comment.conteudo && (
                         <div className={styles.commentContent}>{comment.conteudo}</div>
                       )}
-                      {comment.attachmentUrl && (
-                        comment.attachmentUrl.match(/\.(png|jpe?g|gif|webp)$/i) ? (
-                          <img
-                            src={comment.attachmentUrl}
-                            alt="Imagem do comentário"
-                            className={styles.commentImage}
-                          />
-                        ) : (
-                          <a
-                            href={comment.attachmentUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={styles.commentFileLink}
-                          >
-                            📎 Ver anexo
-                          </a>
-                        )
+                      {comment.imageUrl && (
+                        <img
+                          src={comment.imageUrl}
+                          alt="Imagem do comentário"
+                          className={styles.commentImage}
+                        />
                       )}
                     </div>
                   ))
@@ -711,22 +689,18 @@ function Home() {
                 <label className={styles.commentFileLabel}>
                   <input
                     type="file"
-                    accept="*/*"
-                  ref={commentFileInputRef}
-                  onChange={handleCommentFileChange}
-                  className={styles.commentFileInput}
+                    accept="image/*"
+                    ref={commentImageInputRef}
+                    onChange={handleCommentImageChange}
+                    className={styles.commentFileInput}
                   />
-                  {commentFile ? "Arquivo selecionado" : "Anexar arquivo"}
+                  {commentImage ? "Imagem selecionada" : "Anexar imagem"}
                 </label>
-                {commentFile && (
+                {commentImagePreview && (
                   <div className={styles.commentImagePreview}>
-                    {commentFilePreview ? (
-                      <img src={commentFilePreview} alt="Pré-visualização do comentário" />
-                    ) : (
-                      <span>{commentFile?.name}</span>
-                    )}
-                    <button type="button" onClick={removeCommentFile} className={styles.removeCommentImageBtn}>
-                      Remover anexo
+                    <img src={commentImagePreview} alt="Pré-visualização do comentário" />
+                    <button type="button" onClick={removeCommentImage} className={styles.removeCommentImageBtn}>
+                      Remover imagem
                     </button>
                   </div>
                 )}
