@@ -5,5 +5,9 @@ export class UpdateCommentDto {
   @IsString()
   @IsOptional()
   conteudo?: string;
+
+  @IsString()
+  @IsOptional()
+  attachmentUrl?: string | null;
 }
 
