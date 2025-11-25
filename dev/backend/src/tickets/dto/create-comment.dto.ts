@@ -17,5 +17,9 @@ export class CreateCommentDto {
 
   @IsString()
   @IsOptional()
-  imageUrl?: string;
+  attachmentUrl?: string;
+
+  @IsString()
+  @IsOptional()
+  attachmentName?: string;
 }

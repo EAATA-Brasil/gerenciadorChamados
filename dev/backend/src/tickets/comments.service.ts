@@ -20,15 +20,16 @@ export class CommentsService {
       throw new Error('ticketId é obrigatório');
     }
 
-    if (!dto.conteudo?.trim() && !dto.imageUrl) {
-      throw new BadRequestException('É necessário informar um texto ou anexar uma imagem.');
+    if (!dto.conteudo?.trim() && !dto.attachmentUrl) {
+      throw new BadRequestException('É necessário informar um texto ou anexar um arquivo.');
     }
 
     const comment = new Comment();
     comment.ticketId = dto.ticketId;
     comment.autor = dto.autor;
     comment.conteudo = dto.conteudo?.trim() ?? '';
-    comment.imageUrl = dto.imageUrl;
+    comment.attachmentUrl = dto.attachmentUrl;
+    comment.attachmentName = dto.attachmentName;
     comment.createdAt = new Date();
     
     return await this.commentRepository.save(comment);
@@ -54,12 +55,16 @@ export class CommentsService {
       comment.conteudo = dto.conteudo;
     }
 
-    if (dto.imageUrl !== undefined) {
-      comment.imageUrl = dto.imageUrl;
+    if (dto.attachmentUrl !== undefined) {
+      comment.attachmentUrl = dto.attachmentUrl;
     }
 
-    if (!comment.conteudo?.trim() && !comment.imageUrl) {
-      throw new BadRequestException('O comentário precisa ter texto ou imagem.');
+    if (dto.attachmentName !== undefined) {
+      comment.attachmentName = dto.attachmentName;
+    }
+
+    if (!comment.conteudo?.trim() && !comment.attachmentUrl) {
+      throw new BadRequestException('O comentário precisa ter texto ou arquivo.');
     }
 
     comment.conteudo = comment.conteudo?.trim() ?? '';
