@@ -10,7 +10,7 @@ export class CreateCommentDto {
   @IsNotEmpty()
   autor: string;
 
-  @ValidateIf(o => o.conteudo !== undefined)
+  @ValidateIf(o => typeof o.conteudo === 'string' && o.conteudo.trim() !== '')
   @IsString()
   @IsNotEmpty()
   conteudo?: string;
