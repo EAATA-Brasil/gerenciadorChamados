@@ -131,6 +131,50 @@
   margin: 10px;
 }
 
+.ticketFullDescription {
+  margin: 12px 0;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.ticketFullDescription img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 6px;
+  margin: 8px 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.imageContextMenu {
+  position: fixed;
+  background: #1f1f1f;
+  border: 1px solid #333;
+  border-radius: 8px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+  padding: 8px;
+  z-index: 3000;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 180px;
+}
+
+.imageContextMenu button {
+  background: #2a2a2a;
+  border: 1px solid #3a3a3a;
+  color: var(--text);
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.imageContextMenu button:hover {
+  background: #333;
+  border-color: #4a4a4a;
+}
+
 /* Paginação */
 .pagination {
   margin-top: 1rem;
@@ -332,6 +376,70 @@
 
 .commentTextarea::placeholder {
   color: #888;
+}
+
+.commentFileLabel {
+  background: #2a2a2a;
+  color: var(--text);
+  border: 1px dashed var(--border);
+  padding: 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  text-align: center;
+}
+
+.commentFileInput {
+  display: none;
+}
+
+.commentImagePreview {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  padding: 8px;
+  border-radius: 4px;
+}
+
+.commentImagePreview img {
+  max-width: 120px;
+  border-radius: 4px;
+  object-fit: contain;
+}
+
+.removeCommentImageBtn {
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.removeCommentImageBtn:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.commentImage {
+  max-width: 100%;
+  border-radius: 4px;
+  margin-top: 8px;
+  border: 1px solid var(--border);
+}
+
+.commentFileLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--accent);
+  font-weight: 600;
+  margin-top: 8px;
+  text-decoration: none;
+}
+
+.commentFileLink:hover {
+  text-decoration: underline;
 }
 
 .btnAddComment {
