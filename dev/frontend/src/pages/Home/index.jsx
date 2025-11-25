@@ -23,10 +23,11 @@ function Home() {
   const [newStatus, setNewStatus] = useState("");
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState({ autor: "", conteudo: "" });
-  const [commentImage, setCommentImage] = useState(null);
-  const [commentImagePreview, setCommentImagePreview] = useState(null);
+  const [commentFile, setCommentFile] = useState(null);
+  const [commentFilePreview, setCommentFilePreview] = useState(null);
+  const [commentFileName, setCommentFileName] = useState("");
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
-  const commentImageInputRef = useRef(null);
+  const commentFileInputRef = useRef(null);
   const descriptionRef = useRef(null);
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -113,44 +114,48 @@ function Home() {
       return;
     }
 
-    if (!newComment.conteudo.trim() && !commentImage) {
-      alert("Digite um comentário ou anexe uma imagem");
+    if (!newComment.conteudo.trim() && !commentFile) {
+      alert("Digite um comentário ou anexe um arquivo");
       return;
     }
 
     try {
       setIsSubmittingComment(true);
 
-      let imageUrl;
-      if (commentImage) {
-        const formData = new FormData();
-        formData.append("file", commentImage);
+      let attachmentUrl;
+      let attachmentName;
 
-        const uploadRes = await fetch(`${backendUrl}upload/image`, {
+      if (commentFile) {
+        const formData = new FormData();
+        formData.append("file", commentFile);
+
+        const uploadRes = await fetch(`${backendUrl}upload/file`, {
           method: "POST",
           body: formData,
         });
 
         if (!uploadRes.ok) {
-          throw new Error("Falha ao enviar imagem do comentário");
+          throw new Error("Falha ao enviar arquivo do comentário");
         }
 
         const uploadData = await uploadRes.json();
-        imageUrl = uploadData.url;
+        attachmentUrl = uploadData.url;
+        attachmentName = uploadData.originalname || commentFile.name;
       }
 
       const res = await fetch(`${API_URL}/${selectedTicket.id}/comments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...newComment, imageUrl }),
+        body: JSON.stringify({ ...newComment, attachmentUrl, attachmentName }),
       });
 
       if (res.ok) {
         setNewComment({ autor: "", conteudo: "" });
-        setCommentImage(null);
-        setCommentImagePreview(null);
-        if (commentImageInputRef.current) {
-          commentImageInputRef.current.value = "";
+        setCommentFile(null);
+        setCommentFilePreview(null);
+        setCommentFileName("");
+        if (commentFileInputRef.current) {
+          commentFileInputRef.current.value = "";
         }
         fetchComments(selectedTicket.id);
       }
@@ -161,24 +166,31 @@ function Home() {
     }
   };
 
-  const handleCommentImageChange = (event) => {
+  const handleCommentFileChange = (event) => {
     const file = event.target.files?.[0];
 
-    if (file && file.type.startsWith("image/")) {
-      setCommentImage(file);
-      setCommentImagePreview(URL.createObjectURL(file));
+    if (file) {
+      setCommentFile(file);
+      setCommentFileName(file.name);
+      if (file.type.startsWith("image/")) {
+        setCommentFilePreview(URL.createObjectURL(file));
+      } else {
+        setCommentFilePreview(null);
+      }
     } else {
-      setCommentImage(null);
-      setCommentImagePreview(null);
+      setCommentFile(null);
+      setCommentFilePreview(null);
+      setCommentFileName("");
     }
   };
 
-  const removeCommentImage = () => {
-    setCommentImage(null);
-    setCommentImagePreview(null);
+  const removeCommentFile = () => {
+    setCommentFile(null);
+    setCommentFilePreview(null);
+    setCommentFileName("");
 
-    if (commentImageInputRef.current) {
-      commentImageInputRef.current.value = "";
+    if (commentFileInputRef.current) {
+      commentFileInputRef.current.value = "";
     }
   };
 
@@ -206,15 +218,16 @@ function Home() {
     setNewStatus(ticket.status);
     fetchComments(ticket.id);
     setNewComment({ autor: "", conteudo: "" });
-    removeCommentImage();
+    removeCommentFile();
   };
 
   const handleCloseModal = () => {
     setSelectedTicket(null);
     setComments([]);
     setNewComment({ autor: "", conteudo: "" });
-    setCommentImage(null);
-    setCommentImagePreview(null);
+    setCommentFile(null);
+    setCommentFilePreview(null);
+    setCommentFileName("");
   };
 
   const handleOverlayClick = (e) => {
@@ -692,12 +705,24 @@ function Home() {
                       {comment.conteudo && (
                         <div className={styles.commentContent}>{comment.conteudo}</div>
                       )}
-                      {comment.imageUrl && (
-                        <img
-                          src={comment.imageUrl}
-                          alt="Imagem do comentário"
-                          className={styles.commentImage}
-                        />
+                      {comment.attachmentUrl && (
+                        <div className={styles.commentAttachment}>
+                          {/\.(png|jpe?g|gif|webp)$/i.test(comment.attachmentUrl) ? (
+                            <img
+                              src={comment.attachmentUrl}
+                              alt={comment.attachmentName || "Imagem do comentário"}
+                              className={styles.commentImage}
+                            />
+                          ) : (
+                            <a
+                              href={comment.attachmentUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              {comment.attachmentName || "Arquivo anexado"}
+                            </a>
+                          )}
+                        </div>
                       )}
                     </div>
                   ))
@@ -722,18 +747,21 @@ function Home() {
                 <label className={styles.commentFileLabel}>
                   <input
                     type="file"
-                    accept="image/*"
-                    ref={commentImageInputRef}
-                    onChange={handleCommentImageChange}
+                    ref={commentFileInputRef}
+                    onChange={handleCommentFileChange}
                     className={styles.commentFileInput}
                   />
-                  {commentImage ? "Imagem selecionada" : "Anexar imagem"}
+                  {commentFileName ? `Arquivo: ${commentFileName}` : "Anexar arquivo"}
                 </label>
-                {commentImagePreview && (
+                {(commentFilePreview || commentFileName) && (
                   <div className={styles.commentImagePreview}>
-                    <img src={commentImagePreview} alt="Pré-visualização do comentário" />
-                    <button type="button" onClick={removeCommentImage} className={styles.removeCommentImageBtn}>
-                      Remover imagem
+                    {commentFilePreview ? (
+                      <img src={commentFilePreview} alt="Pré-visualização do comentário" />
+                    ) : (
+                      <span>{commentFileName}</span>
+                    )}
+                    <button type="button" onClick={removeCommentFile} className={styles.removeCommentImageBtn}>
+                      Remover arquivo
                     </button>
                   </div>
                 )}

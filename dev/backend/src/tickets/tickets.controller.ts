@@ -65,7 +65,8 @@ export class TicketsController {
             ticketId: +ticketId,
             autor: createCommentDto.autor,
             conteudo: createCommentDto.conteudo,
-            imageUrl: createCommentDto.imageUrl
+            attachmentUrl: createCommentDto.attachmentUrl,
+            attachmentName: createCommentDto.attachmentName
         };
         
         return this.commentsService.create(commentData);
