@@ -211,7 +211,7 @@ function Home() {
     }
   };
 
-  const visibleTickets = [...tickets].reverse().slice(0, 3);
+  const visibleTickets = [...tickets].slice(0, 3);
 
   const handleOpenModal = (ticket) => {
     setSelectedTicket(ticket);
