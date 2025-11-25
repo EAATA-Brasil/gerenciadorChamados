@@ -19,7 +19,7 @@ function CreateTicket() {
 
   // Estados para arquivos
   const [uploadedImages, setUploadedImages] = useState([]);
-  const [uploadedPdfs, setUploadedPdfs] = useState([]);
+  const [uploadedFiles, setUploadedFiles] = useState([]);
   const [serverImageUrls, setServerImageUrls] = useState([]);
   const [departments, setDepartments] = useState([]);
 
@@ -30,7 +30,7 @@ function CreateTicket() {
 
   // Refs para os inputs de arquivo
   const imageInputRef = useRef(null);
-  const pdfInputRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   // ✅ Função para buscar os departamentos do backend
   const fetchDepartments = async () => {
@@ -108,7 +108,7 @@ function CreateTicket() {
 
   // Funções para disparar o clique nos inputs
   const triggerImageSelect = () => imageInputRef.current?.click();
-  const triggerPdfSelect = () => pdfInputRef.current?.click();
+  const triggerFileSelect = () => fileInputRef.current?.click();
 
   // Handler para mudança de arquivo de imagem
   const handleImageChange = (event) => {
@@ -119,21 +119,20 @@ function CreateTicket() {
     event.target.value = "";
   };
 
-  // Novo handler para mudança de arquivo PDF
-  const handlePdfChange = (event) => {
+  // Novo handler para mudança de arquivos genéricos
+  const handleFileChange = (event) => {
     const file = event.target.files[0];
-    if (file && file.type === "application/pdf") {
-      // Evita adicionar o mesmo arquivo duas vezes
-      if (!uploadedPdfs.some(p => p.name === file.name)) {
-        setUploadedPdfs((prevPdfs) => [...prevPdfs, file]);
+    if (file) {
+      if (!uploadedFiles.some(p => p.name === file.name && p.size === file.size)) {
+        setUploadedFiles((prevFiles) => [...prevFiles, file]);
       }
     }
     event.target.value = "";
   };
 
-  // Função para remover um PDF da lista
-  const removePdf = (fileName) => {
-    setUploadedPdfs(uploadedPdfs.filter(pdf => pdf.name !== fileName));
+  // Função para remover um arquivo da lista
+  const removeFile = (fileName) => {
+    setUploadedFiles(uploadedFiles.filter(file => file.name !== fileName));
   };
 
   const handleSubmit = async (e) => {
@@ -191,30 +190,30 @@ function CreateTicket() {
       }
     }
 
-    // Upload de PDFs e adição dos links na descrição
-    const pdfLinks = [];
-    for (const pdfFile of uploadedPdfs) {
+    // Upload de arquivos e adição dos links na descrição
+    const fileLinks = [];
+    for (const file of uploadedFiles) {
       const formData = new FormData();
-      formData.append("file", pdfFile);
+      formData.append("file", file);
       try {
         const res = await fetch(`${backendUrl}upload/file`, {
           method: "POST",
           body: formData,
         });
         const data = await res.json();
-        pdfLinks.push(`<a href="${data.url}" target="_blank" rel="noopener noreferrer">${pdfFile.name}</a>`);
+        fileLinks.push(`<a href="${data.url}" target="_blank" rel="noopener noreferrer">${file.name}</a>`);
       } catch (error) {
-        setMessage(`❌ ERRO ao enviar PDF: ${error.message}`);
+        setMessage(`❌ ERRO ao enviar arquivo: ${error.message}`);
         return;
       }
     }
 
-    // Adiciona a lista de links de PDF ao final da descrição
-    if (pdfLinks.length > 0) {
+    // Adiciona a lista de links de arquivos ao final da descrição
+    if (fileLinks.length > 0) {
       finalDescription += `
         <p><strong>Anexos:</strong></p>
         <ul>
-          ${pdfLinks.map(link => `<li>${link}</li>`).join('')}
+          ${fileLinks.map(link => `<li>${link}</li>`).join('')}
         </ul>
       `;
     }
@@ -243,7 +242,7 @@ function CreateTicket() {
       setOpenedBy("");
       setDescription("");
       setUploadedImages([]);
-      setUploadedPdfs([]);
+      setUploadedFiles([]);
       setServerImageUrls(newServerImageUrls);
       editor.commands.clearContent();
       
@@ -348,8 +347,8 @@ function CreateTicket() {
             <button type="button" onClick={triggerImageSelect}>
               🖼️ Imagem
             </button>
-            <button type="button" onClick={triggerPdfSelect}>
-              📄 PDF
+            <button type="button" onClick={triggerFileSelect}>
+              📎 Arquivo
             </button>
             <input
               type="file"
@@ -360,9 +359,8 @@ function CreateTicket() {
             />
             <input
               type="file"
-              accept="application/pdf"
-              ref={pdfInputRef}
-              onChange={handlePdfChange}
+              ref={fileInputRef}
+              onChange={handleFileChange}
               style={{ display: "none" }}
             />
           </div>
@@ -375,15 +373,15 @@ function CreateTicket() {
           </div>
         </div>
 
-        {/* Lista de PDFs anexados */}
-        {uploadedPdfs.length > 0 && (
+        {/* Lista de arquivos anexados */}
+        {uploadedFiles.length > 0 && (
           <div className={styles.pdfList}>
-            <strong>PDFs anexados:</strong>
+            <strong>Arquivos anexados:</strong>
             <ul>
-              {uploadedPdfs.map((pdf, index) => (
+              {uploadedFiles.map((file, index) => (
                 <li key={index}>
-                  {pdf.name}
-                  <button type="button" onClick={() => removePdf(pdf.name)} className={styles.removePdfBtn}>
+                  {file.name}
+                  <button type="button" onClick={() => removeFile(file.name)} className={styles.removePdfBtn}>
                     &times;
                   </button>
                 </li>

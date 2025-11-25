@@ -131,6 +131,50 @@
   margin: 10px;
 }
 
+.ticketFullDescription {
+  margin: 12px 0;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.ticketFullDescription img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 6px;
+  margin: 8px 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.imageContextMenu {
+  position: fixed;
+  background: #1f1f1f;
+  border: 1px solid #333;
+  border-radius: 8px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+  padding: 8px;
+  z-index: 3000;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 180px;
+}
+
+.imageContextMenu button {
+  background: #2a2a2a;
+  border: 1px solid #3a3a3a;
+  color: var(--text);
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.imageContextMenu button:hover {
+  background: #333;
+  border-color: #4a4a4a;
+}
+
 /* Paginação */
 .pagination {
   margin-top: 1rem;
