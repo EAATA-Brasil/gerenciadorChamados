@@ -25,8 +25,15 @@ function Home() {
   const [newComment, setNewComment] = useState({ autor: "", conteudo: "" });
   const [commentFile, setCommentFile] = useState(null);
   const [commentFilePreview, setCommentFilePreview] = useState(null);
+  const [imageContextMenu, setImageContextMenu] = useState({
+    visible: false,
+    x: 0,
+    y: 0,
+    src: "",
+  });
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const commentFileInputRef = useRef(null);
+  const descriptionRef = useRef(null);
   
   const [currentPage, setCurrentPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState("all");
@@ -209,8 +216,8 @@ function Home() {
     setSelectedTicket(null);
     setComments([]);
     setNewComment({ autor: "", conteudo: "" });
-    setCommentImage(null);
-    setCommentImagePreview(null);
+    removeCommentFile();
+    setImageContextMenu({ visible: false, x: 0, y: 0, src: "" });
   };
 
   const handleOverlayClick = (e) => {
@@ -289,6 +296,74 @@ function Home() {
   };
 
   const visiblePages = getVisiblePages();
+
+  const handleDownloadImage = () => {
+    if (!imageContextMenu.src) return;
+
+    const link = document.createElement("a");
+    link.href = imageContextMenu.src;
+    link.download = imageContextMenu.src.split("/").pop() || "image";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setImageContextMenu((prev) => ({ ...prev, visible: false }));
+  };
+
+  const handleOpenImageInNewTab = () => {
+    if (imageContextMenu.src) {
+      window.open(imageContextMenu.src, "_blank", "noopener,noreferrer");
+    }
+    setImageContextMenu((prev) => ({ ...prev, visible: false }));
+  };
+
+  useEffect(() => {
+    const container = descriptionRef.current;
+    if (!container) return;
+
+    const handleContextMenu = (event) => {
+      const target = event.target;
+      if (target instanceof HTMLImageElement) {
+        event.preventDefault();
+        setImageContextMenu({
+          visible: true,
+          x: event.clientX,
+          y: event.clientY,
+          src: target.src,
+        });
+      } else {
+        setImageContextMenu((prev) => ({ ...prev, visible: false }));
+      }
+    };
+
+    const handleClick = () => {
+      setImageContextMenu((prev) => ({ ...prev, visible: false }));
+    };
+
+    container.addEventListener("contextmenu", handleContextMenu);
+    container.addEventListener("click", handleClick);
+
+    return () => {
+      container.removeEventListener("contextmenu", handleContextMenu);
+      container.removeEventListener("click", handleClick);
+    };
+  }, [selectedTicket]);
+
+  useEffect(() => {
+    if (!imageContextMenu.visible) return;
+
+    const hideMenu = () =>
+      setImageContextMenu((prev) => ({ ...prev, visible: false }));
+
+    window.addEventListener("scroll", hideMenu);
+    window.addEventListener("resize", hideMenu);
+    window.addEventListener("click", hideMenu);
+
+    return () => {
+      window.removeEventListener("scroll", hideMenu);
+      window.removeEventListener("resize", hideMenu);
+      window.removeEventListener("click", hideMenu);
+    };
+  }, [imageContextMenu.visible]);
 
   return (
     <div className={styles.homeContainer}>
@@ -536,7 +611,25 @@ function Home() {
             {selectedTicket.openedBy && (
               <p><strong>Aberto por:</strong> {selectedTicket.openedBy}</p>
             )}
-            <div dangerouslySetInnerHTML={{ __html: selectedTicket.description }}></div>
+            <div
+              ref={descriptionRef}
+              className={styles.ticketFullDescription}
+              dangerouslySetInnerHTML={{ __html: selectedTicket.description }}
+            ></div>
+
+            {imageContextMenu.visible && (
+              <div
+                className={styles.imageContextMenu}
+                style={{ top: imageContextMenu.y, left: imageContextMenu.x }}
+              >
+                <button type="button" onClick={handleOpenImageInNewTab}>
+                  Abrir imagem em nova aba
+                </button>
+                <button type="button" onClick={handleDownloadImage}>
+                  Baixar imagem
+                </button>
+              </div>
+            )}
 
             {selectedTicket.imagePath && (
               <div style={{ margin: "15px 0" }}>
