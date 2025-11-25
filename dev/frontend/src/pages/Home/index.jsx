@@ -27,12 +27,20 @@ function Home() {
   const [commentImagePreview, setCommentImagePreview] = useState(null);
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const commentImageInputRef = useRef(null);
-  
+  const descriptionRef = useRef(null);
+
   const [currentPage, setCurrentPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState("all");
   const [departmentFilter, setDepartmentFilter] = useState("all");
   const [sortOrder, setSortOrder] = useState("desc");
   
+  const [imageContextMenu, setImageContextMenu] = useState({
+    visible: false,
+    x: 0,
+    y: 0,
+    src: "",
+  })
+
   const API_URL = backendUrl + 'tickets';
 
   const total = tickets.length;
@@ -286,17 +294,42 @@ function Home() {
 
   const visiblePages = getVisiblePages();
 
-  const handleDownloadImage = () => {
+  const handleDownloadImage = async (e) => {
+    e.stopPropagation();
     if (!imageContextMenu.src) return;
 
-    const link = document.createElement("a");
-    link.href = imageContextMenu.src;
-    link.download = imageContextMenu.src.split("/").pop() || "image";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    setImageContextMenu((prev) => ({ ...prev, visible: false }));
+    try {
+      // 1. Busca a imagem como um Blob (dados binários)
+      const response = await fetch(imageContextMenu.src);
+      const blob = await response.blob();
+      
+      // 2. Cria uma URL local temporária para o Blob
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      
+      link.href = url;
+      // 3. Define o nome do arquivo para download
+      const filename = imageContextMenu.src.split("/").pop().split("?")[0] || "image.png";
+      link.download = filename;
+      
+      // 4. Simula o clique para iniciar o download
+      document.body.appendChild(link);
+      link.click();
+      
+      // 5. Limpeza: remove a URL temporária e o elemento link
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(link);
+      
+    } catch (error) {
+      console.error("Erro ao tentar baixar a imagem:", error);
+      alert("Não foi possível baixar a imagem. Verifique o console para detalhes.");
+    } finally {
+      setImageContextMenu((prev) => ({ ...prev, visible: false }));
+    }
   };
+
+
+
 
   const handleOpenImageInNewTab = () => {
     if (imageContextMenu.src) {
