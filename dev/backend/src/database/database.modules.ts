@@ -5,9 +5,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { Ticket } from '../tickets/ticket.entity';
 import { Sector } from '../sectors/sector.entity';
 import * as fs from 'fs';
-import * as path from 'path';
-
-const CONFIG_PATH = path.join(__dirname, '..', '..', 'config.json');
+import { getConfigPath } from '../config/config-path';
 
 @Module({})
 export class DatabaseModule {
@@ -24,8 +22,9 @@ export class DatabaseModule {
           useFactory: async (config: ConfigService) => {
             // Verifica se existe configuração no config.json
             let dbConfig: any = { type: 'sqlite' };
-            if (fs.existsSync(CONFIG_PATH)) {
-              const fileConfig = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8'));
+            const configPath = getConfigPath();
+            if (fs.existsSync(configPath)) {
+              const fileConfig = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
                 if (fileConfig.type) {
                 // Mapeia 'sqlite' para 'better-sqlite3' se for o caso
                   const dbType = fileConfig.type === 'sqlite' ? 'better-sqlite3' : fileConfig.type;

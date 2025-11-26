@@ -1,11 +1,10 @@
 import * as fs from "fs";
-import * as path from "path";
-
-const CONFIG_PATH = path.join(__dirname, "..", "..", "config.json");
+import { getConfigPath } from "./config-path";
 
 export function getDatabaseConfig() {
-  if (fs.existsSync(CONFIG_PATH)) {
-    const data = JSON.parse(fs.readFileSync(CONFIG_PATH, "utf-8"));
+  const configPath = getConfigPath();
+  if (fs.existsSync(configPath)) {
+    const data = JSON.parse(fs.readFileSync(configPath, "utf-8"));
 
     if (data.dbUrl && data.dbUrl.startsWith("postgres")) {
       // Se for Postgres, retorna a config apropriada
