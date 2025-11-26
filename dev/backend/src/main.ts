@@ -13,8 +13,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import * as express from 'express';
 import * as fs from "fs";
-
-const CONFIG_PATH = join(__dirname, "..", "config.json");
+import { getConfigPath } from './config/config-path';
 
 /**
  * Função para iniciar o servidor em uma porta livre.
@@ -59,8 +58,9 @@ async function bootstrap() {
 bootstrap();
 
 export function getDatabaseUrl(): string {
-  if (fs.existsSync(CONFIG_PATH)) {
-    const data = JSON.parse(fs.readFileSync(CONFIG_PATH, "utf-8"));
+  const configPath = getConfigPath();
+  if (fs.existsSync(configPath)) {
+    const data = JSON.parse(fs.readFileSync(configPath, "utf-8"));
     if (data.dbUrl) return data.dbUrl;
   }
   return "sqlite://./data.sqlite"; // padrão

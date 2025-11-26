@@ -1,10 +1,8 @@
 // src/config/config.controller.ts
 import { Controller, Get, Post, Body } from "@nestjs/common";
 import * as fs from "fs";
-import * as path from "path";
 import { ConfigService } from "@nestjs/config";
-
-const CONFIG_PATH = path.join(__dirname, "..", "..", "config.json");
+import { getConfigPath, getEnvPath } from "./config-path";
 
 @Controller("config")
 export class ConfigController {
@@ -12,8 +10,9 @@ export class ConfigController {
 
   @Get("db")
   getDbConfig() {
-    if (fs.existsSync(CONFIG_PATH)) {
-      const data = JSON.parse(fs.readFileSync(CONFIG_PATH, "utf-8"));
+    const configPath = getConfigPath();
+    if (fs.existsSync(configPath)) {
+      const data = JSON.parse(fs.readFileSync(configPath, "utf-8"));
       return {
         type: data.type || 'sqlite',
         host: data.host || '',
@@ -23,7 +22,7 @@ export class ConfigController {
         name: data.name || ''
       };
     }
-    return { 
+    return {
       type: 'sqlite',
       host: '',
       port: '',
@@ -35,18 +34,23 @@ export class ConfigController {
 
   @Post('save-db-config')
   saveDbConfig(@Body() config: any) {
-    // Salva no arquivo config.json
-    fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
-    
+    const configPath = getConfigPath();
+    const envPath = getEnvPath();
+
+    // Salva no arquivo config.json em um caminho gravável
+    fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+
     // Atualiza o .env (opcional)
-    fs.writeFileSync('.env', `
-      DB_TYPE=${config.type || 'sqlite'}
-      DB_HOST=${config.host || ''}
-      DB_PORT=${config.port || ''}
-      DB_USER=${config.user || ''}
-      DB_PASS=${config.password || ''}
-      DB_NAME=${config.name || ''}
-    `);
+    const envContent = [
+      `DB_TYPE=${config.type || 'sqlite'}`,
+      `DB_HOST=${config.host || ''}`,
+      `DB_PORT=${config.port || ''}`,
+      `DB_USER=${config.user || ''}`,
+      `DB_PASS=${config.password || ''}`,
+      `DB_NAME=${config.name || ''}`,
+    ].join('\n');
+
+    fs.writeFileSync(envPath, envContent);
     console.log("Reiniciar backend")
     return { success: true };
   }
